@@ -7,10 +7,14 @@ import BuyThisDoHippo.Mapoop.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
+@Getter
 @Entity
 @Builder
 @AllArgsConstructor
@@ -52,5 +56,10 @@ public class Toilet extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    /** 태그 조회용 (1:N) */
+    @OneToMany(mappedBy = "toilet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ToiletTag> tags = new ArrayList<>();
 
 }

@@ -4,6 +4,7 @@ import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -29,6 +30,13 @@ public class CustomExceptionHandler {
                 .toList();
 
         CommonResponse<?> response = CommonResponse.onFailure(errors, CustomErrorCode.INVALID_REQUEST_DTO);
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<CommonResponse<?>> handleMissingParam(MissingServletRequestParameterException ex) {
+
+        CommonResponse<?> response = CommonResponse.onFailure(null, CustomErrorCode.MISSING_REQUIRED_PARAM);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 }
