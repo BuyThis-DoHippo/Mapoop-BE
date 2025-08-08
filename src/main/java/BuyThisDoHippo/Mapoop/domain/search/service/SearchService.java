@@ -12,8 +12,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,22 +33,47 @@ public class SearchService {
     private static final int MEDIUM_TTL = 1800; // 30분 (인기 검색어)
     private static final int LONG_TTL = 3600;   // 1시간 (매우 인기 검색어)
 
+    // 지구 반지름(미터)
+    private static final double EARTH_RADIUS_M = 6371000;
+
     /**
      * 사용자가 검색 버튼을 클릭하거나 자동완성에서 선택했을 때 수행되는 로직
      * @param criteria 검색 조건
      */
-    public SearchResultDto search(SearchCriteriaDto criteria) {
+    public SearchResultDto search(SearchCriteriaDto criteria, Double lat, Double lng) {
         String keyword = criteria.getKeyword();
         log.debug("검색 시작 - 검색어: {}", keyword);
 
         Pageable pageable = PageRequest.of(criteria.getPage(), criteria.getPageSize());
         List<Toilet> toilets = toiletRepository.findByNameContainingIgnoreCaseOrderByAvgRatingDesc(keyword, pageable);
 
-        // TODO: 필터링 로직들 추가 (최소 평점 등등 ..)
+        // TODO: 필터링 로직들 추가 (최소 평점 등등 ..) + distance 계산
 
+        // Entity -> Dto
         List<ToiletInfo> toiletInfos = toilets.stream()
                 .map(ToiletInfo::from)
                 .toList();
+
+        // 현재 좌표가 들어왔다면 거리 계산 + 거리순으로 sorting
+        if (lat != null && lng != null) {
+            for (ToiletInfo info : toiletInfos) {
+                Double toiletLat = info.getLatitude();
+                Double toiletLng = info.getLongitude();
+
+                if (toiletLat != null && toiletLng != null) {
+                    int distance = distanceMeters(lat, lng, toiletLat, toiletLng);
+                    info.setDistance(distance);
+                } else {
+                    info.setDistance(null);
+                }
+            }
+
+            toiletInfos = toiletInfos.stream()
+                    .sorted(Comparator.comparing(
+                         ti -> Optional.ofNullable(ti.getDistance()).orElse(Integer.MAX_VALUE)))
+                    .toList();
+        }
+
         long totalCount = toiletInfos.size();
         int totalPages = (int) Math.ceil((double) totalCount / criteria.getPageSize());
         log.debug("검색 완료 - 결과 수: {}", totalCount);
@@ -58,5 +84,22 @@ public class SearchService {
                 .currentPage(criteria.getPage())
                 .totalPages(totalPages)
                 .build();
+
+    }
+
+    private static int distanceMeters(double lat1, double lon1, double lat2, double lon2) {
+        // 위도/경도 -> 라디안 변환
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double rLat1 = Math.toRadians(lat1);
+        double rLat2 = Math.toRadians(lat2);
+
+        // Haversine
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double d = EARTH_RADIUS_M * c;
+
+        return (int) Math.round(d);
     }
 }

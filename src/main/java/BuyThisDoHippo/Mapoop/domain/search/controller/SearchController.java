@@ -1,5 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.search.controller;
 
+import BuyThisDoHippo.Mapoop.domain.search.dto.AutoCompleteDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchCriteriaDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
 import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
@@ -51,7 +52,18 @@ public class SearchController {
                 .build();
 
         // 있다면 search 호출
-        SearchResultDto result = searchService.search(criteria);
+        SearchResultDto result = searchService.search(criteria, lat, lng);
         return CommonResponse.onSuccess(result, "검색 결과 조회 성공");
+    }
+
+    @GetMapping("/auto")
+    public CommonResponse<AutoCompleteDto> autoComplete(
+        @RequestParam String keyword,
+        @RequestParam(defaultValue = "8") int limit
+    ) {
+        log.debug("자동완성 요청 - 쿼리: '{}'", keyword);
+
+
+        return CommonResponse.onSuccess(null, "자동완성 조회 성공");
     }
 }
