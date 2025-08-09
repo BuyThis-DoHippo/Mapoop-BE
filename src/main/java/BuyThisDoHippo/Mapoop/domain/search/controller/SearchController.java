@@ -33,18 +33,7 @@ public class SearchController {
             @RequestParam(required = false) Double lng
     ) {
         log.debug("검색 요청 - 쿼리: '{}', 페이지: {}, 크기: {}",keyword, page, pageSize);
-        // keyword input 검증
-        if (keyword == null || keyword.trim().isEmpty()) {
-            SearchResultDto emptyResult = SearchResultDto.builder()
-                    .totalCount(0L)
-                    .toilets(Collections.emptyList())
-                    .currentPage(page)
-                    .totalPages(0)
-                    .build();
-
-            return CommonResponse.onSuccess(emptyResult, "검색어가 없습니다.");
-        }
-
+        
         SearchCriteriaDto criteria = SearchCriteriaDto.builder()
                 .keyword(keyword)
                 .page(page)
