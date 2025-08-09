@@ -6,6 +6,7 @@ import BuyThisDoHippo.Mapoop.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 public class User extends BaseEntity {
 
     @Id
@@ -23,7 +25,7 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true, unique = true)
     private String email;
 
     @Column(nullable = false)
@@ -35,4 +37,11 @@ public class User extends BaseEntity {
     private LocalDateTime locationConsentDate;
 
     // 약관 버전 필요하다면 추가
+
+    public void updateLocationConsent(Boolean consent, String consentVersion) {
+        this.isLocationConsent = consent;
+        this.locationConsentDate = consent ? LocalDateTime.now() : null;
+    }
+
+
 }
