@@ -1,12 +1,10 @@
 package BuyThisDoHippo.Mapoop.domain.search.controller;
 
-import BuyThisDoHippo.Mapoop.domain.search.dto.AutoCompleteDto;
+import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchCriteriaDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
 import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
-import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
-import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -57,13 +57,20 @@ public class SearchController {
     }
 
     @GetMapping("/auto")
-    public CommonResponse<AutoCompleteDto> autoComplete(
+    public CommonResponse<Map<String, Object>> autoComplete(
         @RequestParam String keyword,
         @RequestParam(defaultValue = "8") int limit
     ) {
         log.debug("자동완성 요청 - 쿼리: '{}'", keyword);
 
+        List<SearchSuggestionDto> suggestions = searchService.getAutoCompleteSuggestions(keyword.trim());
+        Map<String, Object> data = Map.of(
+            "keyword", keyword,
+            "totalCount", suggestions.size(),
+            "limit", limit,
+            "suggestions", suggestions
+        );
 
-        return CommonResponse.onSuccess(null, "자동완성 조회 성공");
+        return CommonResponse.onSuccess(data, "자동완성 조회 성공");
     }
 }

@@ -1,5 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.search.service;
 
+import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchCriteriaDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
@@ -12,9 +13,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -87,6 +91,9 @@ public class SearchService {
 
     }
 
+    /**
+     * 하버사인 공식 기반 거리 계산 (라디안)
+     */
     private static int distanceMeters(double lat1, double lon1, double lat2, double lon2) {
         // 위도/경도 -> 라디안 변환
         double dLat = Math.toRadians(lat2 - lat1);
@@ -101,5 +108,79 @@ public class SearchService {
         double d = EARTH_RADIUS_M * c;
 
         return (int) Math.round(d);
+    }
+
+    /**
+     * 사용자가 타이핑 할 때 마다 호출
+     */
+    public List<SearchSuggestionDto> getAutoCompleteSuggestions(String keyword) {
+        log.debug("자동완성 검색 - 쿼리: {}", keyword);
+
+        if(keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        keyword = keyword.trim();
+        String cacheKey = buildCacheKey(keyword);
+
+        // Redis 캐시에서 1차 확인
+        List<SearchSuggestionDto> cacheResults = getCacheSuggestions(cacheKey);
+        if(cacheResults != null) {
+            log.debug("캐시 Hit - Redis에서 가져옵니다.");
+            return cacheResults;
+        }
+
+        // DB 2차 확인
+        List<SearchSuggestionDto> suggestions = getDBSuggestions(keyword);
+        log.debug("캐시 Miss - DB에서 가져옵니다.");
+
+        // Redis에 저장
+        int ttl = calculateDynamicTTL(keyword);
+        cacheSuggestions(cacheKey, suggestions, ttl);
+
+        return suggestions;
+    }
+
+    private void cacheSuggestions(String cacheKey, List<SearchSuggestionDto> suggestions, int ttl) {
+        redisTemplate.opsForValue().set(cacheKey, suggestions, ttl, TimeUnit.SECONDS);
+        log.debug("캐시 저장 완료 | key={} | ttl={}초 | size={}", cacheKey, ttl, suggestions.size());
+    }
+
+    private int calculateDynamicTTL(String keyword) {
+        String countKey = SEARCH_COUNT_PREFIX + keyword.toLowerCase();
+        Object countObj = redisTemplate.opsForValue().get(countKey);
+        long searchCount = (countObj != null) ? Long.parseLong(String.valueOf(countObj)) : 0L;
+
+        if (searchCount >= 50) return LONG_TTL;
+        if (searchCount >= 10) return MEDIUM_TTL;
+        return SHORT_TTL;
+    }
+
+    private List<SearchSuggestionDto> getDBSuggestions(String keyword) {
+        Pageable pageable = PageRequest.of(0, 8);
+        List<Toilet> toilets = toiletRepository
+                .findByNameContainingIgnoreCaseOrderByAvgRatingDesc(keyword, pageable);
+
+        return toilets.stream()
+                .map(SearchSuggestionDto::from) // DTO 내부 from 사용
+                .distinct()
+                .limit(8)
+                .toList();
+    }
+
+    /**
+     * cacheKey를 통해 Redis에서 값을 꺼내오는 로직
+     */
+    @SuppressWarnings("unchecked")
+    private List<SearchSuggestionDto> getCacheSuggestions(String cacheKey) {
+        Object cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached instanceof List<?> list) {
+            return (List<SearchSuggestionDto>) list;
+        }
+        // List가 아니라면 캐시 미스
+        return null;
+    }
+
+    private String buildCacheKey(String keyword) {
+        return AUTOCOMPLETE_PREFIX + keyword.toLowerCase();
     }
 }

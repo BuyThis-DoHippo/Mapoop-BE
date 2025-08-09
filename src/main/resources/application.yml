@@ -21,3 +21,8 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
+
+logging:
+  level:
+    root: INFO                      # 전체는 INFO
+    BuyThisDoHippo.Mapoop: DEBUG

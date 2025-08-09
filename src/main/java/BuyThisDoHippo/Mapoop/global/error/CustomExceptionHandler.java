@@ -1,6 +1,10 @@
 package BuyThisDoHippo.Mapoop.global.error;
 
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.RedisConnectionFailureException;
+import org.springframework.data.redis.RedisSystemException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -37,6 +41,20 @@ public class CustomExceptionHandler {
     public ResponseEntity<CommonResponse<?>> handleMissingParam(MissingServletRequestParameterException ex) {
 
         CommonResponse<?> response = CommonResponse.onFailure(null, CustomErrorCode.MISSING_REQUIRED_PARAM);
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    // Redis 연결 실패
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    public ResponseEntity<CommonResponse<?>> handleRedisConnectionFail(RedisConnectionFailureException ex) {
+        CommonResponse<?> response = CommonResponse.onFailure(null, CustomErrorCode.REDIS_CONNECTION_FAILED);
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    // Redis 명령/시스템 예외
+    @ExceptionHandler({RedisSystemException.class, DataAccessException.class})
+    public ResponseEntity<CommonResponse<?>> handleRedisSystemError(Exception ex) {
+        CommonResponse<?> response = CommonResponse.onFailure(null, CustomErrorCode.REDIS_OPERATION_FAILED);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 }
