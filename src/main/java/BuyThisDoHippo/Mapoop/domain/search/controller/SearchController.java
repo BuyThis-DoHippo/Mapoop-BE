@@ -1,11 +1,9 @@
 package BuyThisDoHippo.Mapoop.domain.search.controller;
 
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchHomeDto;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchCriteriaDto;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
+import BuyThisDoHippo.Mapoop.domain.search.dto.*;
 import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -27,22 +26,48 @@ public class SearchController {
 
     @GetMapping("/results")
     public CommonResponse<SearchResultDto> search(
-            @RequestParam String keyword,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int pageSize,
             @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lng
+            @RequestParam(required = false) Double lng,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Boolean isAvailable,
+            @RequestParam(required = false) Boolean isGenderSeparated,
+            @RequestParam(required = false) Boolean isOpen24h,
+            @RequestParam(required = false) Boolean hasIndoorToilet,
+            @RequestParam(required = false) Boolean hasBidet,
+            @RequestParam(required = false) Boolean hasAccessibleToilet,
+            @RequestParam(required = false) Boolean hasDiaperTable,
+            @RequestParam(required = false) Boolean providesSanitaryItems
     ) {
         log.debug("검색 요청 - 쿼리: '{}', 페이지: {}, 크기: {}",keyword, page, pageSize);
 
-        SearchCriteriaDto criteria = SearchCriteriaDto.builder()
+        ToiletType typed = null;
+        if (type != null && !type.isBlank()) {
+            try { typed = ToiletType.valueOf(type.toUpperCase()); }
+            catch (IllegalArgumentException ignore) { /* 잘못된 값: 필터 미적용 */ }
+        }
+
+        // 필터 설정 후 검색
+        SearchFilterDto filter = SearchFilterDto.builder()
+                .minRating(minRating)
+                .type(typed)
+                .isAvailable(isAvailable)
+                .isGenderSeparated(isGenderSeparated)
+                .isOpen24h(isOpen24h)
+                .hasIndoorToilet(hasIndoorToilet)
+                .hasBidet(hasBidet)
+                .hasAccessibleToilet(hasAccessibleToilet)
+                .hasDiaperTable(hasDiaperTable)
+                .providesSanitaryItems(providesSanitaryItems)
                 .keyword(keyword)
                 .page(page)
                 .pageSize(pageSize)
                 .build();
 
-        // 있다면 search 호출
-        SearchResultDto result = searchService.search(criteria, lat, lng);
+        SearchResultDto result = searchService.search(filter, lat, lng);
         return CommonResponse.onSuccess(result, "검색 결과 조회 성공");
     }
 
@@ -97,4 +122,5 @@ public class SearchController {
         List<ToiletInfo> toilets = result.getToilets();
         return CommonResponse.onSuccess(toilets, "긴급 화장실 3곳 조회 성공");
     }
+
 }

@@ -47,4 +47,188 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
     @Query("SELECT tt FROM ToiletTag tt JOIN FETCH tt.tag WHERE tt.toilet.id IN :toiletIds")
     List<ToiletTag> findTagsByToiletIds(@Param("toiletIds") List<Long> toiletIds);
 
+    // 거리순으로 search
+    @Query(
+            value = """
+              SELECT
+                t.id,
+                t.name,
+                t.latitude,
+                t.longitude,
+                t.address,
+                t.floor,
+                t.avg_rating   AS avgRating,
+                t.total_reviews AS totalReviews,
+                (6371000 * ACOS(
+                    COS(RADIANS(:lat)) * COS(RADIANS(t.latitude)) *
+                    COS(RADIANS(t.longitude) - RADIANS(:lng)) +
+                    SIN(RADIANS(:lat)) * SIN(RADIANS(t.latitude))
+                )) AS distance
+              FROM toilet t
+              WHERE
+                (:keyword IS NULL OR t.name LIKE CONCAT('%', :keyword, '%'))
+                AND (:minRating IS NULL OR (t.avg_rating IS NOT NULL AND t.avg_rating >= :minRating))
+                AND (:type IS NULL OR t.type = :type)
+                AND (:genderType IS NULL OR t.gender_type = :genderType)
+                AND (:isOpen24h IS NULL OR t.open_24h = :isOpen24h)
+                AND (:hasIndoorToilet IS NULL OR t.has_indoor_toilet = :hasIndoorToilet)
+                AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
+                AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
+                AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (
+                  :isAvailable IS NULL
+                  OR (
+                        CASE
+                          WHEN t.open_24h = 1 THEN 1
+                          WHEN t.open_time IS NULL OR t.close_time IS NULL THEN 0
+                          WHEN t.open_time < t.close_time
+                               THEN (TIME(:now) BETWEEN t.open_time AND t.close_time)
+                          ELSE
+                               (TIME(:now) >= t.open_time OR TIME(:now) < t.close_time)
+                        END
+                     ) = :isAvailable
+                )
+              ORDER BY
+                distance ASC,
+                (t.avg_rating IS NULL) ASC,
+                t.avg_rating DESC,
+                t.total_reviews DESC
+              """,
+                        countQuery = """
+              SELECT COUNT(*)
+              FROM toilet t
+              WHERE
+                (:keyword IS NULL OR t.name LIKE CONCAT('%', :keyword, '%'))
+                AND (:minRating IS NULL OR (t.avg_rating IS NOT NULL AND t.avg_rating >= :minRating))
+                AND (:type IS NULL OR t.type = :type)
+                AND (:genderType IS NULL OR t.gender_type = :genderType)
+                AND (:isOpen24h IS NULL OR t.open_24h = :isOpen24h)
+                AND (:hasIndoorToilet IS NULL OR t.has_indoor_toilet = :hasIndoorToilet)
+                AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
+                AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
+                AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (
+                  :isAvailable IS NULL
+                  OR (
+                        CASE
+                          WHEN t.open_24h = 1 THEN 1
+                          WHEN t.open_time IS NULL OR t.close_time IS NULL THEN 0
+                          WHEN t.open_time < t.close_time
+                               THEN (TIME(:now) BETWEEN t.open_time AND t.close_time)
+                          ELSE
+                               (TIME(:now) >= t.open_time OR TIME(:now) < t.close_time)
+                        END
+                     ) = :isAvailable
+                )
+              """,
+            nativeQuery = true
+    )
+    Page<ToiletWithDistance> searchByDistance(
+            @Param("keyword") String keyword,
+            @Param("minRating") Double minRating,
+            @Param("type") String type,                // 'PUBLIC' or 'STORE'
+            @Param("genderType") String genderType,    // 'UNISEX' or 'SEPARATE'
+            @Param("isOpen24h") Boolean isOpen24h,
+            @Param("hasIndoorToilet") Boolean hasIndoorToilet,
+            @Param("hasBidet") Boolean hasBidet,
+            @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
+            @Param("hasDiaperTable") Boolean hasDiaperTable,
+            @Param("providesSanitaryItems") Boolean providesSanitaryItems,
+            @Param("isAvailable") Boolean isAvailable,
+            @Param("now") String nowTime,              // "HH:mm:ss"
+            @Param("lat") double lat,
+            @Param("lng") double lng,
+            Pageable pageable
+    );
+
+    // 위치 없음 → 평점순
+    @Query(
+            value = """
+              SELECT
+                t.id,
+                t.name,
+                t.latitude,
+                t.longitude,
+                t.address,
+                t.floor,
+                t.avg_rating   AS avgRating,
+                t.total_reviews AS totalReviews,
+                NULL AS distance
+              FROM toilet t
+              WHERE
+                (:keyword IS NULL OR t.name LIKE CONCAT('%', :keyword, '%'))
+                AND (:minRating IS NULL OR (t.avg_rating IS NOT NULL AND t.avg_rating >= :minRating))
+                AND (:type IS NULL OR t.type = :type)
+                AND (:genderType IS NULL OR t.gender_type = :genderType)
+                AND (:isOpen24h IS NULL OR t.open_24h = :isOpen24h)
+                AND (:hasIndoorToilet IS NULL OR t.has_indoor_toilet = :hasIndoorToilet)
+                AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
+                AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
+                AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (
+                  :isAvailable IS NULL
+                  OR (
+                        CASE
+                          WHEN t.open_24h = 1 THEN 1
+                          WHEN t.open_time IS NULL OR t.close_time IS NULL THEN 0
+                          WHEN t.open_time < t.close_time
+                               THEN (TIME(:now) BETWEEN t.open_time AND t.close_time)
+                          ELSE
+                               (TIME(:now) >= t.open_time OR TIME(:now) < t.close_time)
+                        END
+                     ) = :isAvailable
+                )
+              ORDER BY
+                (t.avg_rating IS NULL) ASC,
+                t.avg_rating DESC,
+                t.total_reviews DESC
+              """,
+                        countQuery = """
+              SELECT COUNT(*)
+              FROM toilet t
+              WHERE
+                (:keyword IS NULL OR t.name LIKE CONCAT('%', :keyword, '%'))
+                AND (:minRating IS NULL OR (t.avg_rating IS NOT NULL AND t.avg_rating >= :minRating))
+                AND (:type IS NULL OR t.type = :type)
+                AND (:genderType IS NULL OR t.gender_type = :genderType)
+                AND (:isOpen24h IS NULL OR t.open_24h = :isOpen24h)
+                AND (:hasIndoorToilet IS NULL OR t.has_indoor_toilet = :hasIndoorToilet)
+                AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
+                AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
+                AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (
+                  :isAvailable IS NULL
+                  OR (
+                        CASE
+                          WHEN t.open_24h = 1 THEN 1
+                          WHEN t.open_time IS NULL OR t.close_time IS NULL THEN 0
+                          WHEN t.open_time < t.close_time
+                               THEN (TIME(:now) BETWEEN t.open_time AND t.close_time)
+                          ELSE
+                               (TIME(:now) >= t.open_time OR TIME(:now) < t.close_time)
+                        END
+                     ) = :isAvailable
+                )
+              """,
+            nativeQuery = true
+    )
+    Page<ToiletWithDistance> searchByRating(
+            @Param("keyword") String keyword,
+            @Param("minRating") Double minRating,
+            @Param("type") String type,
+            @Param("genderType") String genderType,
+            @Param("isOpen24h") Boolean isOpen24h,
+            @Param("hasIndoorToilet") Boolean hasIndoorToilet,
+            @Param("hasBidet") Boolean hasBidet,
+            @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
+            @Param("hasDiaperTable") Boolean hasDiaperTable,
+            @Param("providesSanitaryItems") Boolean providesSanitaryItems,
+            @Param("isAvailable") Boolean isAvailable,
+            @Param("now") String nowTime,
+            Pageable pageable
+    );
 }

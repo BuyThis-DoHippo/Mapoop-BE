@@ -1,11 +1,13 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.dto;
 
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
+import BuyThisDoHippo.Mapoop.domain.toilet.repository.projection.ToiletWithDistance;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -39,6 +41,22 @@ public class ToiletInfo {
                     ).toList())
             .isPartnership(toilet.getIsPartnership())
             .build();
+    }
+
+    public static ToiletInfo fromProjection(ToiletWithDistance projection) {
+        return ToiletInfo.builder()
+                .toiletId(projection.getId())
+                .name(projection.getName())
+                .latitude(projection.getLatitude())
+                .longitude(projection.getLongitude())
+                .address(projection.getAddress())
+                .floor(projection.getFloor())
+                .rating(projection.getAvgRating())
+                .distance(projection.getDistance())
+                .tags(new ArrayList<>()) // 나중에 추가
+                .isPartnership(projection.getIsPartnership())
+                .build();
+
     }
 
 }
