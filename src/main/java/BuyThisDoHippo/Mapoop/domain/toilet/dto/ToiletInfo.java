@@ -20,8 +20,9 @@ public class ToiletInfo {
     private String address;
     private Integer floor;
     private Double rating;
-    private Integer distance;
+    private Double distance;    // km 단위
     private List<String> tags;
+    private Boolean isPartnership;
 
     public static ToiletInfo from(Toilet toilet) {
         // distance 빼고 반환
@@ -36,6 +37,7 @@ public class ToiletInfo {
             .tags(toilet.getTags().stream()
                     .map(toiletTag -> toiletTag.getTag().getName()
                     ).toList())
+            .isPartnership(toilet.getIsPartnership())
             .build();
     }
 

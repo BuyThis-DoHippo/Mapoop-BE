@@ -1,28 +1,30 @@
 package BuyThisDoHippo.Mapoop.domain.search.service;
 
+import BuyThisDoHippo.Mapoop.domain.search.dto.SearchHomeDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchCriteriaDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
+import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
+import BuyThisDoHippo.Mapoop.domain.toilet.repository.projection.ToiletWithDistance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SearchService {
 
     private final ToiletRepository toiletRepository;
@@ -37,8 +39,8 @@ public class SearchService {
     private static final int MEDIUM_TTL = 1800; // 30분 (인기 검색어)
     private static final int LONG_TTL = 3600;   // 1시간 (매우 인기 검색어)
 
-    // 지구 반지름(미터)
-    private static final double EARTH_RADIUS_M = 6371000;
+    // 지구 반지름 (km)
+    private static final double EARTH_RADIUS_KM = 6371.0;
 
     /**
      * 사용자가 검색 버튼을 클릭하거나 자동완성에서 선택했을 때 수행되는 로직
@@ -65,7 +67,7 @@ public class SearchService {
                 Double toiletLng = info.getLongitude();
 
                 if (toiletLat != null && toiletLng != null) {
-                    int distance = distanceMeters(lat, lng, toiletLat, toiletLng);
+                    Double distance = distanceKilometers(lat, lng, toiletLat, toiletLng);
                     info.setDistance(distance);
                 } else {
                     info.setDistance(null);
@@ -74,7 +76,7 @@ public class SearchService {
 
             toiletInfos = toiletInfos.stream()
                     .sorted(Comparator.comparing(
-                         ti -> Optional.ofNullable(ti.getDistance()).orElse(Integer.MAX_VALUE)))
+                         ti -> Optional.ofNullable(ti.getDistance()).orElse(Double.MAX_VALUE)))
                     .toList();
         }
 
@@ -92,9 +94,9 @@ public class SearchService {
     }
 
     /**
-     * 하버사인 공식 기반 거리 계산 (라디안)
+     * 하버사인 공식 기반 거리 계산 (km 단위)
      */
-    private static int distanceMeters(double lat1, double lon1, double lat2, double lon2) {
+    private static double distanceKilometers(double lat1, double lon1, double lat2, double lon2) {
         // 위도/경도 -> 라디안 변환
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
@@ -105,9 +107,9 @@ public class SearchService {
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                 Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double d = EARTH_RADIUS_M * c;
 
-        return (int) Math.round(d);
+        // km 단위로 반환 (EARTH_RADIUS_KM = 6371.0)
+        return EARTH_RADIUS_KM * c;
     }
 
     /**
@@ -167,9 +169,6 @@ public class SearchService {
                 .toList();
     }
 
-    /**
-     * cacheKey를 통해 Redis에서 값을 꺼내오는 로직
-     */
     @SuppressWarnings("unchecked")
     private List<SearchSuggestionDto> getCacheSuggestions(String cacheKey) {
         Object cached = redisTemplate.opsForValue().get(cacheKey);
@@ -183,4 +182,83 @@ public class SearchService {
     private String buildCacheKey(String keyword) {
         return AUTOCOMPLETE_PREFIX + keyword.toLowerCase();
     }
+
+    /**
+     * 1. 홈화면 노출을 위한 가까운 화장실 리스트
+     * lat, lng가 null일 경우 평점순 제공
+     * 2. 긴급찾기 3곳을 찾기 위해 호출 (limit == 3)
+     */
+    public SearchHomeDto searchNearby(Double userLat, Double userLng, Double radiusKm, Integer limit) {
+
+        // 1. null 아니면 가까운 순으로 sort 하고 return
+        if(userLat != null && userLng != null) {
+            List<ToiletWithDistance> nearbyToilets = toiletRepository.findNearbyToilets(userLat, userLng, radiusKm, limit);
+            List<ToiletInfo> nearbyToiletInfos = nearbyToilets.stream()
+                    .map(this::mapToToiletInfo)
+                    .toList();
+            addTagsToToiletInfo(nearbyToiletInfos);
+
+            long totalCount = nearbyToiletInfos.size();
+            return SearchHomeDto.builder()
+                    .totalCount(totalCount)
+                    .toilets(nearbyToiletInfos)
+                    .limit(limit)
+                    .radiusKm(radiusKm)
+                    .build();
+
+        } else {
+            // 2. null 이면 바로 rating 순으로 찾아서 return
+            Pageable pageable = PageRequest.of(0, limit);
+            List<Toilet> ratingToilets = toiletRepository.findAllByOrderByAvgRatingDesc(pageable);
+            List<ToiletInfo> ratingToiletInfos = ratingToilets.stream()
+                    .map(ToiletInfo::from)
+                    .toList();
+            long totalCount = ratingToiletInfos.size();
+            return SearchHomeDto.builder()
+                    .totalCount(totalCount)
+                    .toilets(ratingToiletInfos)
+                    .limit(limit)
+                    .radiusKm(radiusKm)
+                    .build();
+        }
+    }
+
+    private void addTagsToToiletInfo(List<ToiletInfo> nearbyToiletInfos) {
+        List<Long> toiletIds = nearbyToiletInfos.stream()
+                .map(ToiletInfo::getToiletId)
+                .toList();
+
+        if(toiletIds.isEmpty()) return;
+
+        List<ToiletTag> toiletTags = toiletRepository.findTagsByToiletIds(toiletIds);
+
+        // toiletId별로 태그들을 그룹화
+        Map<Long, List<String>> tagsByToiletId = toiletTags.stream()
+                .collect(Collectors.groupingBy(
+                        tt -> tt.getToilet().getId(),
+                        Collectors.mapping(tt -> tt.getTag().getName(), Collectors.toList())
+                ));
+
+        // ToiletInfo에 태그 설정
+        nearbyToiletInfos.forEach(toiletInfo -> {
+            List<String> tags = tagsByToiletId.getOrDefault(toiletInfo.getToiletId(), new ArrayList<>());
+            toiletInfo.setTags(tags);
+        });
+    }
+
+    private ToiletInfo mapToToiletInfo(ToiletWithDistance projection) {
+        return ToiletInfo.builder()
+                .toiletId(projection.getId())
+                .name(projection.getName())
+                .latitude(projection.getLatitude())
+                .longitude(projection.getLongitude())
+                .address(projection.getAddress())
+                .floor(projection.getFloor())
+                .rating(projection.getAvgRating())
+                .distance(projection.getDistance())
+                .tags(new ArrayList<>()) // 나중에 추가
+                .isPartnership(projection.getIsPartnership())
+                .build();
+    }
+
 }

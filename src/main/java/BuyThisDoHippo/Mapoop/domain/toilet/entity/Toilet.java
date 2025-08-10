@@ -19,6 +19,10 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "toilet",
+        indexes = {
+            @Index(name = "idx_toilet_location", columnList = "latitude, longitude")
+        })
 public class Toilet extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
