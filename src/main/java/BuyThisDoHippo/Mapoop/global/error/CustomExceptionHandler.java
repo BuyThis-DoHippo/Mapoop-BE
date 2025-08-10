@@ -52,9 +52,15 @@ public class CustomExceptionHandler {
     }
 
     // Redis 명령/시스템 예외
-    @ExceptionHandler({RedisSystemException.class, DataAccessException.class})
+    @ExceptionHandler(RedisSystemException.class)
     public ResponseEntity<CommonResponse<?>> handleRedisSystemError(Exception ex) {
         CommonResponse<?> response = CommonResponse.onFailure(null, CustomErrorCode.REDIS_OPERATION_FAILED);
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<CommonResponse<?>> handleDataAccessError(DataAccessException ex) {
+        CommonResponse<?> response = CommonResponse.onFailure(null, CustomErrorCode.DATABASE_ACCESS_ERROR);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 }
