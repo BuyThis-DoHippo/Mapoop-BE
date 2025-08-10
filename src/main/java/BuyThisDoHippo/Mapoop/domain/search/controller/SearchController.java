@@ -5,6 +5,7 @@ import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchCriteriaDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
 import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
+import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -82,5 +83,18 @@ public class SearchController {
             return CommonResponse.onSuccess(result, "근처 화장실 조회 성공");
         }
         return CommonResponse.onSuccess(result, "리뷰 높은 순서대로 조회 성공");
+    }
+
+    @GetMapping("/emergency")
+    public CommonResponse<List<ToiletInfo>> emergencySearch(
+            @RequestParam Double lat,
+            @RequestParam Double lng,
+            @RequestParam(defaultValue = "3.0") Double radiusKm
+    ) {
+        log.debug("긴급 찾기 3곳 조회");
+
+        SearchHomeDto result = searchService.searchNearby(lat, lng, radiusKm, 3);
+        List<ToiletInfo> toilets = result.getToilets();
+        return CommonResponse.onSuccess(toilets, "긴급 화장실 3곳 조회 성공");
     }
 }

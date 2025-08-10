@@ -1,13 +1,11 @@
 package BuyThisDoHippo.Mapoop.domain.search.dto;
 
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
+@Getter
 @Data
 @Builder
 @NoArgsConstructor
