@@ -10,13 +10,21 @@ public enum CustomErrorCode {
 
     // 1000: 일반 에러
     FORBIDDEN(HttpStatus.FORBIDDEN, 1000, "금지된 요청입니다."),
-    INVALID_REQUEST_DTO(HttpStatus.BAD_REQUEST, 1001, "요청 데이터가 조건에 만족하지 않습니다.");
+    INVALID_REQUEST_DTO(HttpStatus.BAD_REQUEST, 1001, "요청 데이터가 조건에 만족하지 않습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 1002, "서버 내부 오류가 발생했습니다."),
+    UNAUTHORIZED(HttpStatus.FORBIDDEN, 1003, "권한이 없습니다."),
 
     // 2000: 유저 에러
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 2001, "사용자를 찾을 수 없습니다."),
 
     // 3000: 화장실 에러
 
-    // 4000: 등등 ..
+    // 4000: 채팅 에러
+    CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, 4001, "대화를 찾을 수 없습니다."),
+    CHAT_ACCESS_DENIED(HttpStatus.FORBIDDEN, 4002, "해당 대화에 접근할 권한이 없습니다.");
+
+
+    // 5000: 등등 ..
 
     private final HttpStatus status;
     private final Integer code;
