@@ -31,3 +31,9 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: 3600000  # 1시간 (밀리초)
   refresh-token-expiration: 604800000  # 7일 (밀리초)
+
+# OpenAI API 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY:your-api-key-here}
+    url: https://api.openai.com/v1/chat/completions
