@@ -52,6 +52,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/toilets/{id}/reviews").permitAll()
                         .requestMatchers("/api/tags").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
+                        .requestMatchers("/api/search/**").permitAll()
+                        .requestMatchers("/api/test/**").permitAll()
 
                         // 인증 필요한 API
                         .requestMatchers("/api/users/**").authenticated()
