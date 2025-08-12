@@ -3,6 +3,7 @@ package BuyThisDoHippo.Mapoop.domain.map.service;
 import BuyThisDoHippo.Mapoop.domain.map.dto.MapResultDto;
 import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerDto;
 import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerFilterDto;
+import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MapService {
 
+    private final TagService tagService;
     private final ToiletRepository toiletRepository;
 
     public MapResultDto getMapResult(MarkerFilterDto filter) {
@@ -32,6 +34,7 @@ public class MapService {
                 filter.getIsAvailable(),
                 now
         );
+        tagService.addTagsToMarker(markers);
 
         long totalCount = toiletRepository.countMarkers(
                 filter.getMinRating(),
@@ -42,8 +45,6 @@ public class MapService {
                 filter.getIsAvailable(),
                 now
         );
-        
-        /// TODO: tag 추가
 
         return MapResultDto.builder()
                 .totalCount(totalCount)
