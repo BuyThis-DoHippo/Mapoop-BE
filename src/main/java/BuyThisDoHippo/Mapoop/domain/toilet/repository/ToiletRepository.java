@@ -1,7 +1,10 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.repository;
 
+import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerDto;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.projection.ToiletWithDistance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Repository
@@ -17,6 +21,80 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
     List<Toilet> findByNameContainingIgnoreCaseOrderByAvgRatingDesc(String keyword, Pageable pageable);
 
     List<Toilet> findAllByOrderByAvgRatingDesc(Pageable pageable);
+
+    @Query("""
+    select new BuyThisDoHippo.Mapoop.domain.map.dto.MarkerDto(
+        t.id,
+        t.latitude,
+        t.longitude,
+        t.name,
+        t.avgRating,
+        null,
+        (case
+            when t.open24h = true then true
+            when t.openTime is null or t.closeTime is null then false
+            when t.openTime < t.closeTime
+                then (:now between t.openTime and t.closeTime)
+            else (:now >= t.openTime or :now < t.closeTime)
+         end),
+        t.address,
+        t.floor
+    )
+    from Toilet t
+    where (:minRating is null or t.avgRating >= :minRating)
+      and (:type is null or t.type = :type)
+      and (:genderType is null or t.genderType = :genderType)
+      and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
+      and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
+      and (
+          :isAvailable is null or
+          (case
+            when t.open24h = true then true
+            when t.openTime is null or t.closeTime is null then false
+            when t.openTime < t.closeTime
+                then (:now between t.openTime and t.closeTime)
+            else (:now >= t.openTime or :now < t.closeTime)
+           end) = :isAvailable
+      )
+    """)
+    List<MarkerDto> findMarkers(
+            @Param("minRating") Double minRating,
+            @Param("type") ToiletType type,
+            @Param("genderType") GenderType genderType,
+            @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
+            @Param("hasDiaperTable") Boolean hasDiaperTable,
+            @Param("isAvailable") Boolean isAvailable,
+            @Param("now") LocalTime nowTime
+    );
+
+    @Query("""
+        select count(t)
+        from Toilet t
+        where (:minRating is null or t.avgRating >= :minRating)
+          and (:type is null or t.type = :type)
+          and (:genderType is null or t.genderType = :genderType)
+          and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
+          and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
+          and (
+              :isAvailable is null or
+              (case
+                when t.open24h = true then true
+                when t.openTime is null or t.closeTime is null then false
+                when t.openTime < t.closeTime
+                    then (:now between t.openTime and t.closeTime)
+                else (:now >= t.openTime or :now < t.closeTime)
+               end) = :isAvailable
+      )
+        """)
+    long countMarkers(
+            @Param("minRating") Double minRating,
+            @Param("type") ToiletType type,
+            @Param("genderType") GenderType genderType,
+            @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
+            @Param("hasDiaperTable") Boolean hasDiaperTable,
+            @Param("isAvailable") Boolean isAvailable,
+            @Param("now") LocalTime nowTime
+    );
 
     @Query(value = """
     SELECT 
@@ -76,7 +154,7 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
                 AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
                 AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
                 AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
-                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_table = :hasDiaperTable)
                 AND (
                   :isAvailable IS NULL
                   OR (
@@ -109,7 +187,7 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
                 AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
                 AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
                 AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
-                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_table = :hasDiaperTable)
                 AND (
                   :isAvailable IS NULL
                   OR (
@@ -168,7 +246,7 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
                 AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
                 AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
                 AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
-                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_table = :hasDiaperTable)
                 AND (
                   :isAvailable IS NULL
                   OR (
@@ -200,7 +278,7 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
                 AND (:hasBidet IS NULL OR t.has_bidet = :hasBidet)
                 AND (:providesSanitaryItems IS NULL OR t.provides_sanitary_items = :providesSanitaryItems)
                 AND (:hasAccessibleToilet IS NULL OR t.has_accessible_toilet = :hasAccessibleToilet)
-                AND (:hasDiaperTable IS NULL OR t.has_diaper_changing = :hasDiaperTable)
+                AND (:hasDiaperTable IS NULL OR t.has_diaper_table = :hasDiaperTable)
                 AND (
                   :isAvailable IS NULL
                   OR (

@@ -5,6 +5,7 @@ import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilterDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
+import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class SearchService {
 
+    private final TagService tagService;
     private final ToiletRepository toiletRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -106,7 +108,7 @@ public class SearchService {
         List<ToiletInfo> toiletInfos = toilets.getContent().stream()
                 .map(ToiletInfo::fromProjection)
                 .toList();
-        addTagsToToiletInfo(toiletInfos);
+        tagService.addTagsToToiletInfo(toiletInfos);
 
         return SearchResultDto.builder()
                 .totalCount(toilets.getTotalElements())
@@ -209,7 +211,7 @@ public class SearchService {
             List<ToiletInfo> nearbyToiletInfos = nearbyToilets.stream()
                     .map(ToiletInfo::fromProjection)
                     .toList();
-            addTagsToToiletInfo(nearbyToiletInfos);
+            tagService.addTagsToToiletInfo(nearbyToiletInfos);
 
             long totalCount = nearbyToiletInfos.size();
             return SearchHomeDto.builder()
@@ -236,27 +238,27 @@ public class SearchService {
         }
     }
 
-    private void addTagsToToiletInfo(List<ToiletInfo> toiletInfos) {
-        List<Long> toiletIds = toiletInfos.stream()
-                .map(ToiletInfo::getToiletId)
-                .toList();
-
-        if(toiletIds.isEmpty()) return;
-
-        List<ToiletTag> toiletTags = toiletRepository.findTagsByToiletIds(toiletIds);
-
-        // toiletId별로 태그들을 그룹화
-        Map<Long, List<String>> tagsByToiletId = toiletTags.stream()
-                .collect(Collectors.groupingBy(
-                        tt -> tt.getToilet().getId(),
-                        Collectors.mapping(tt -> tt.getTag().getName(), Collectors.toList())
-                ));
-
-        // ToiletInfo에 태그 설정
-        toiletInfos.forEach(toiletInfo -> {
-            List<String> tags = tagsByToiletId.getOrDefault(toiletInfo.getToiletId(), new ArrayList<>());
-            toiletInfo.setTags(tags);
-        });
-    }
+//    private void addTagsToToiletInfo(List<ToiletInfo> toiletInfos) {
+//        List<Long> toiletIds = toiletInfos.stream()
+//                .map(ToiletInfo::getToiletId)
+//                .toList();
+//
+//        if(toiletIds.isEmpty()) return;
+//
+//        List<ToiletTag> toiletTags = toiletRepository.findTagsByToiletIds(toiletIds);
+//
+//        // toiletId별로 태그들을 그룹화
+//        Map<Long, List<String>> tagsByToiletId = toiletTags.stream()
+//                .collect(Collectors.groupingBy(
+//                        tt -> tt.getToilet().getId(),
+//                        Collectors.mapping(tt -> tt.getTag().getName(), Collectors.toList())
+//                ));
+//
+//        // ToiletInfo에 태그 설정
+//        toiletInfos.forEach(toiletInfo -> {
+//            List<String> tags = tagsByToiletId.getOrDefault(toiletInfo.getToiletId(), new ArrayList<>());
+//            toiletInfo.setTags(tags);
+//        });
+//    }
 
 }
