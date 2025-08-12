@@ -81,8 +81,8 @@ public class Toilet extends BaseEntity {
     @Column(name = "provides_sanitary_items", nullable = false)
     private boolean providesSanitaryItems;
 
-    @Column(name = "has_diaper_changing", nullable = false)
-    private boolean hasDiaperChanging;
+    @Column(name = "has_diaper_table", nullable = false)
+    private boolean hasDiaperTable;
 
     @Column(name = "has_accessible_toilet", nullable = false)
     private boolean hasAccessibleToilet;
