@@ -3,8 +3,10 @@ package BuyThisDoHippo.Mapoop.domain.tag.entity;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.global.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class ToiletTag extends BaseEntity {
 
     @Id
