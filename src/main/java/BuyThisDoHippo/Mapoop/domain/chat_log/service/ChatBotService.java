@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,7 +26,7 @@ public class ChatBotService {
 
     private final ChatLogRepository chatLogRepository;
     private final UserRepository userRepository;
-    private final OpenAIService openAIService;  // GPT 서비스 추가
+    private final ChatGPTService chatGPTService;  // GPT 서비스 추가
 
     /**
      * 챗봇에게 질문하고 답변받기
@@ -43,7 +42,7 @@ public class ChatBotService {
         }
 
         // 2. GPT로 답변 생성 🤖
-        String answer = openAIService.generateChatResponse(request.getQuestion(), user);
+        String answer = chatGPTService.generateChatResponse(request.getQuestion(), user);
 
         ChatLog chatLog = ChatLog.builder()
                 .question(request.getQuestion())
@@ -90,7 +89,7 @@ public class ChatBotService {
 
         if (userId != null) {
             hasPermission = chatLogRepository.existsByIdAndUserId(chatId, userId);
-            } else {
+        } else {
             hasPermission = chatLogRepository.existsByIdAndSessionId(chatId, sessionId);
         }
 
@@ -184,3 +183,4 @@ public class ChatBotService {
     }
 
 }
+
