@@ -49,6 +49,9 @@ dependencies {
 
 	// JSON 처리
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	// google geocoding api 사용
+	implementation group: 'com.google.maps', name: 'google-maps-services', version: '2.2.0'
 }
 
 tasks.named('test') {
