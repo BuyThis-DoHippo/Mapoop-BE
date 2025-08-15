@@ -23,7 +23,7 @@ public class MapController {
 
     private final MapService mapService;
 
-    /// TODO: 필터링 항목 추가 (검색과 동일하게, 상태 태그 추가)
+    /// TODO: 상태 태그 필터링 추가하기
     @GetMapping("/markers")
     public CommonResponse<MapResultDto> getMarkers(
             @RequestParam(required = false) Double minRating,

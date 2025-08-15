@@ -24,7 +24,7 @@ public class SearchController {
 
     private final SearchService searchService;
 
-    /// TODO: 상태 태그 필터링 추가
+    /// TODO: 상태 태그 필터링 추가하기
     @GetMapping("/results")
     public CommonResponse<SearchResultDto> search(
             @RequestParam(required = false) String keyword,
