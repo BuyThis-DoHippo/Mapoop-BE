@@ -24,6 +24,7 @@ public class SearchController {
 
     private final SearchService searchService;
 
+    /// TODO: 상태 태그 필터링 추가
     @GetMapping("/results")
     public CommonResponse<SearchResultDto> search(
             @RequestParam(required = false) String keyword,
@@ -116,11 +117,11 @@ public class SearchController {
             @RequestParam Double lng,
             @RequestParam(defaultValue = "3.0") Double radiusKm
     ) {
-        log.debug("긴급 찾기 3곳 조회");
+        log.debug("긴급 찾기 조회");
 
-        SearchHomeDto result = searchService.searchNearby(lat, lng, radiusKm, 3);
+        SearchHomeDto result = searchService.searchNearby(lat, lng, radiusKm, 5);
         List<ToiletInfo> toilets = result.getToilets();
-        return CommonResponse.onSuccess(toilets, "긴급 화장실 3곳 조회 성공");
+        return CommonResponse.onSuccess(toilets, "긴급 화장실 조회 성공");
     }
 
 }
