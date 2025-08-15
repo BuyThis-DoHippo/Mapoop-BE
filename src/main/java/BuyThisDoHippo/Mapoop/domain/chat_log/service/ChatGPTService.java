@@ -7,123 +7,81 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 
 @Service
-@Slf4j
+@RequiredArgsConstructor
 public class ChatGPTService {
 
-    @Value("${openai.api.key}")
-    private String apiKey;
+    // 실제 OpenAI/LLM 클라이언트 주입부는 프로젝트에 맞게
+    // private final OpenAiClient openAi;
 
-    @Value("${openai.api.model:gpt-5-mini}")  // ← 설정에서 가져오기
-    private String model;
-
-    private final ObjectMapper om = new ObjectMapper();
-
-    private OpenAIClient client;
-
-    private OpenAIClient client() {
-        return OpenAIOkHttpClient.builder()
-                .apiKey(apiKey)
-                .build();
-    }
-
-    public String generateChatResponse(String question, User user) {
-        return generateChatResponse(question, user, null);
-    }
-
-    /**
-     * GPT API로 챗봇 답변 생성
-     */
-    public String generateChatResponse(String question, User user, Object places) {
-        try {
-            log.info("GPT API 호출 시작 - 질문: {}", question);
-
-            String systemPrompt = buildSystemPrompt();
-            String userPrompt = buildUserPrompt(question, user, places);
-
-            ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                    .model(model)
-                    .addSystemMessage(systemPrompt)
-                    .addUserMessage(userPrompt)
-                    .maxCompletionTokens(200)
-                    .temperature(0.2)
-                    .build();
-
-            ChatCompletion res = client().chat().completions().create(params);
-
-            var choices = res.choices();
-            if (choices == null || choices.isEmpty()) {
-                return getFallbackResponse(question);
-            }
-
-            var first = choices.get(0);
-            return first.message().content()
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .orElse(getFallbackResponse(question));
-        } catch (Exception e) {
-            log.error("GPT API 호출 실패", e);
-            return getFallbackResponse(question);
+    public String recommendFromCandidates(
+            String question,
+            List<KakaoLocalService.PlaceDto> candidates,
+            int maxPicks
+    ) {
+        // 후보를 JSON-like 문자열로 직렬화 (LLM에 넘길 재료)
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < candidates.size(); i++) {
+            var c = candidates.get(i);
+            if (i > 0) json.append(',');
+            json.append("{")
+                    .append("\"name\":").append(q(c.getName())).append(',')
+                    .append("\"address\":").append(q(nz(c.getRoadAddress(), "주소 정보 없음"))).append(',')
+                    .append("\"floor\":").append(q(nz(c.getBuildingFloor(), ""))).append(',')
+                    .append("\"walkTime\":").append(q(nz(c.getWalkTime(), ""))).append(',')
+                    .append("\"hours\":").append(q(nz(c.getHours(), "")))
+                    .append("}");
         }
+        json.append("]");
+
+        String system = """
+            너는 화장실 추천 도우미야.
+            반드시 내가 주는 candidates 배열 안에서만 골라. 후보 밖 장소를 만들거나 추측하지 마.
+            사용자의 요구(예: 별점/접근성/가까움 등)를 고려해서 최대 N개를 추천하고,
+            각 추천마다 한 줄 설명을 붙여 bullet로 출력해.
+            """;
+
+        String user = """
+            질문: %s
+            N: %d
+            candidates: %s
+            출력 예:
+            • 이름 (도보 약 X분, 층수/특징) — 주소
+            • ...
+            """.formatted(question, maxPicks, json);
+
+        // 실제 LLM 호출부 (프로젝트 클라이언트에 맞게 교체)
+        // String reply = openAi.chat(system, user);
+
+        // 데모/폴백 포맷터 (LLM 연결 전이라도 동작하도록)
+        String reply = fallbackFormat(candidates, maxPicks);
+
+        return (reply == null || reply.isBlank())
+                ? "추천을 생성하지 못했어요. 잠시 후 다시 시도해주세요."
+                : reply;
     }
 
-    private String buildSystemPrompt() {
-        return """
-                너는 '마푸프' 화장실 안내 도우미.
-                반드시 제공된 places[] 데이터만 사용해 답해. 데이터 없으면
-                "정확한 위치 확인 후 알려드리겠습니다"라고만 답해.
-                
-                규칙:
-                - 지하철역/공원 내 화장실을 최우선으로 선택
-                - 아래 필드를 모두 채워서 150자 이내 한 문단으로 출력
-                필드: {name, roadAddress, buildingFloor, walkTime, hours}
-                
-                출력형식(딱 한 줄):
-                📍{name} ({roadAddress}) · {buildingFloor} · 🚶{walkTime} · 🕐{hours}
-        """;
-    }
-
-    private String buildUserPrompt(String question, User user, Object places) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("사용자 질문: ").append(question);
-
-        if (user != null) {
-            sb.append("\n\n사용자 정보:");
-            if (Boolean.TRUE.equals(user.getIsLocationConsent())) {
-                sb.append("\n - 위치 정보 이용 동의: 예");
-            }
-            if (user.getName() != null) {
-                sb.append("\n - 사용자명: ").append(user.getName());
-            }
-        }
-
-        if (places != null) {
-            sb.append("\n\nplaces:\n").append(toJsonSafe(places));
-        } else {
-            sb.append("\n\nplaces: []");
+    private static String fallbackFormat(List<KakaoLocalService.PlaceDto> cs, int n) {
+        var sb = new StringBuilder("조건에 맞는 추천입니다:\n");
+        for (int i = 0; i < Math.min(cs.size(), n); i++) {
+            var c = cs.get(i);
+            sb.append("• ")
+                    .append(c.getName())
+                    .append(" (").append(nz(c.getWalkTime(), "도보 약 ?분")).append(", ")
+                    .append(nz(c.getBuildingFloor(), "")).append(")")
+                    .append(" — ").append(nz(c.getRoadAddress(), "주소 정보 없음"))
+                    .append('\n');
         }
         return sb.toString();
     }
 
-    private String toJsonSafe(Object o) {
-        try {
-            return om.writerWithDefaultPrettyPrinter().writeValueAsString(o);
-        } catch (JsonProcessingException e) {
-            log.warn("places 직렬화 실패: {}", e.getMessage());
-            return "[]";
-        }
-    }
-
-    private String getFallbackResponse(String question) {
-        String lowerQuestion = question.toLowerCase();
-        if (lowerQuestion.contains("가까운") || lowerQuestion.contains("근처")) {
-            return "현재 위치에서 가장 가까운 화장실을 찾아드리겠습니다. 위치 정보를 허용해주시면 더 정확한 안내가 가능합니다.";
-        }
-        return "죄송합니다. 일시적인 서비스 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-    }
+    private static String q(String s) { return "\"" + (s == null ? "" : s.replace("\"", "\\\"")) + "\""; }
+    private static String nz(String s, String d) { return (s == null || s.isBlank()) ? d : s; }
 }

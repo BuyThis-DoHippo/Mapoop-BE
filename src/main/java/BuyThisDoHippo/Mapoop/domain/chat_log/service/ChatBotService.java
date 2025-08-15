@@ -5,265 +5,229 @@ import BuyThisDoHippo.Mapoop.domain.chat_log.dto.ChatHistoryResponse;
 import BuyThisDoHippo.Mapoop.domain.chat_log.dto.ChatResponse;
 import BuyThisDoHippo.Mapoop.domain.chat_log.entity.ChatLog;
 import BuyThisDoHippo.Mapoop.domain.chat_log.repository.ChatLogRepository;
+import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilterDto;
+import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
+import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.user.entity.User;
 import BuyThisDoHippo.Mapoop.domain.user.repository.UserRepository;
 import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
 import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
-@Slf4j
 public class ChatBotService {
 
     private final ChatLogRepository chatLogRepository;
-    private final KakaoLocalService kakaoLocalService;
+    // Kakao 폴백을 쓰지 않을 거면 주입도 제거
+    // private final Optional<KakaoLocalService> kakaoLocalService;
     private final UserRepository userRepository;
-    private final ChatGPTService chatGPTService;  // GPT 서비스 추가
+    private final ChatGPTService chatGPTService;
+    private final SearchService searchService;
 
-    /**
-     * 챗봇에게 질문하고 답변받기
-     */
-    @RequiredArgsConstructor
-    @Service
-    public class ChatBotService {
+    /** 챗봇에게 질문하고 답변받기: ✅ DB 후보만으로 추천 */
+    @Transactional
+    public ChatResponse askQuestion(Long userId, String sessionId, ChatAskRequest req) {
+        log.info("챗봇 질문 요청 - userId={}, sessionId={}, q='{}'", userId, sessionId, req.getQuestion());
 
-        private final SearchService searchService;          // ✅ 추가
-        private final ChatGPTService chatGPTService;
-        private final KakaoLocalService kakaoLocalService;  // 폴백용(선택)
+        User user = (userId != null) ? findUserById(userId) : null;
 
-        @Transactional
-        public ChatResponse askQuestion(Long userId, String sessionId, ChatAskRequest req) {
-            User user = (userId != null) ? findUserById(userId) : null;
+        // 규칙 기반 필터
+        Double minRating = parseMinRating(req.getQuestion()).orElse(null);
+        boolean accessibleOnly = parseAccessible(req.getQuestion());
+        Integer maxMinutes = parseMaxMinutes(req.getQuestion()).orElse(null); // ⬅️ "2분", "5분" 같은 제한
 
-            // 1) 자연어에서 간단한 필터 뽑기 (선택)
-            Double minRating = parseMinRating(req.getQuestion()).orElse(req.getMinRating());
-            boolean accessibleOnly = parseAccessible(req.getQuestion()) || Boolean.TRUE.equals(req.getAccessibleOnly());
-
-            // 2) 우리 DB 우선 검색
-            var filter = SearchFilterDto.builder()
-                    .keyword(req.getQuestion())     // 단순히 질문 전체를 키워드로 먼저 넣고
-                    .minRating(minRating)           // 별점 필터
-                    .hasAccessibleToilet(accessibleOnly ? true : null)
-                    // 필요시 다른 필터도 매핑
-                    .page(0).pageSize(5)
-                    .build();
-
-            var dbResult = searchService.search(filter, req.getLat(), req.getLng());
-            var toilets = dbResult.getToilets(); // List<ToiletInfo>
-
-            List<KakaoLocalService.PlaceDto> places = toPlaces(toilets, req.getLat(), req.getLng());
-
-            // 3) DB 결과 없고 좌표 있으면 → 카카오 폴백(비즈월렛 준비 전이면 생략 가능)
-            if (places.isEmpty() && req.getLat() != null && req.getLng() != null) {
-                places = kakaoLocalService.searchToilets(req.getLat(), req.getLng(),
-                        req.getRadius() == null ? 500 : req.getRadius());
-            }
-
-            // 4) GPT 호출 (places 있으면 포맷만 하게)
-            String answer = chatGPTService.generateChatResponse(
-                    req.getQuestion(),
-                    user,
-                    places.isEmpty() ? null : places
-            );
-
-            // 5) 저장/반환
+        // "N분 이내" 요청인데 좌표가 없으면 계산이 불가 → 짧게 안내하고 반환
+        if (maxMinutes != null && (req.getLat() == null || req.getLng() == null)) {
+            String ans = "요청하신 \"도보 " + maxMinutes + "분 이내\"를 맞추려면 현재 위치(lat/lng)가 필요해요.";
             ChatLog saved = chatLogRepository.save(ChatLog.builder()
-                    .question(req.getQuestion())
-                    .answer(answer)
-                    .user(user)
-                    .sessionId(sessionId)
-                    .build());
-
+                    .question(req.getQuestion()).answer(ans).user(user).sessionId(sessionId).build());
             return ChatResponse.from(saved);
         }
 
-        private Optional<Double> parseMinRating(String q) {
-            if (q == null) return Optional.empty();
-            // “3.5”, “별점 4”, “평점4이상” 등 간단 추출
-            var m = java.util.regex.Pattern.compile("(?:별점|평점)?\\s*([0-5](?:\\.\\d)?)\\s*(?:점|이상)?")
-                    .matcher(q);
-            if (m.find()) {
-                try { return Optional.of(Double.parseDouble(m.group(1))); } catch (Exception ignored) {}
-            }
-            return Optional.empty();
-        }
-        private boolean parseAccessible(String q) {
-            if (q == null) return false;
-            return q.contains("장애인") || q.contains("휠체어") || q.contains("배리어프리");
-        }
-    }
+        // DB 검색 (키워드 X, 조건만)
+        SearchFilterDto filter = SearchFilterDto.builder()
+                .keyword(null)
+                .minRating(minRating)
+                .hasAccessibleToilet(accessibleOnly ? true : null)
+                .page(0)
+                .pageSize(50) // 넉넉히 받아와서 후처리 필터링
+                .build();
 
+        var dbResult = searchService.search(filter, req.getLat(), req.getLng());
+        var toilets  = dbResult.getToilets();
 
-    /**
-     * 사용자의 대화 내역 조회 (페이지네이션)
-     */
-    public ChatHistoryResponse getChatHistory(Long userId, String sessionId, int page, int size) {
-        log.info("대화 내역 조회 - 사용자 ID: {}, 세션 ID: {}, 페이지: {}", userId, sessionId, page);
+        // ① N분 이내 필터링(있다면) ② 도보시간 오름차순 정렬 ③ 최대 5개
+        List<ToiletInfo> picked = toilets.stream()
+                .filter(t -> {
+                    if (maxMinutes == null) return true;
+                    int m = estimateWalkMinutes(req.getLat(), req.getLng(), t);
+                    return m <= maxMinutes;
+                })
+                .sorted((a, b) -> Integer.compare(
+                        estimateWalkMinutes(req.getLat(), req.getLng(), a),
+                        estimateWalkMinutes(req.getLat(), req.getLng(), b)
+                ))
+                .limit(5)
+                .toList();
 
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<ChatLog> chatLogs;
+        // 후보를 챗봇 포맷으로
+        List<KakaoLocalService.PlaceDto> candidates = toPlaces(picked, req.getLat(), req.getLng());
 
-        if(userId != null) {
-            chatLogs = chatLogRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        String answer;
+        if (!candidates.isEmpty()) {
+            // 최대 5개만 넘김(1개 이상이면 OK)
+            answer = chatGPTService.recommendFromCandidates(
+                    req.getQuestion(),
+                    candidates,
+                    candidates.size()
+            );
         } else {
-            chatLogs = chatLogRepository.findBySessionIdOrderByCreatedAtDesc(sessionId, pageable);
+            answer = "요청하신 조건에 맞는 화장실을 DB에서 찾지 못했어요. 반경을 넓히거나 최소 별점을 낮춰보세요.";
         }
 
-        Page<ChatResponse> chatResponses = chatLogs.map(ChatResponse::from);
+        ChatLog saved = chatLogRepository.save(ChatLog.builder()
+                .question(req.getQuestion())
+                .answer(answer)
+                .user(user)
+                .sessionId(sessionId)
+                .build());
 
-        return ChatHistoryResponse.from(chatResponses);
+        log.info("챗봇 답변 완료 - chatId={}", saved.getId());
+        return ChatResponse.from(saved);
     }
 
-    /**
-     * 특정 대화 삭제(권한 체크 포함)
-     */
+
+    /** 대화 내역 조회 */
+    public ChatHistoryResponse getChatHistory(Long userId, String sessionId, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ChatLog> chatLogs = (userId != null)
+                ? chatLogRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+                : chatLogRepository.findBySessionIdOrderByCreatedAtDesc(sessionId, pageable);
+        return ChatHistoryResponse.from(chatLogs.map(ChatResponse::from));
+    }
+
+    /** 특정 대화 삭제(권한 체크) */
     @Transactional
     public void deleteChatLog(Long userId, String sessionId, Long chatId) {
-        log.info("대화 삭제 요청 - 사용자 ID: {}, 세션 ID: {}, 채팅 ID: {}", userId, sessionId, chatId);
-
-        boolean hasPermission = false;
-
-        if (userId != null) {
-            hasPermission = chatLogRepository.existsByIdAndUserId(chatId, userId);
-        } else {
-            hasPermission = chatLogRepository.existsByIdAndSessionId(chatId, sessionId);
-        }
-
-        if (!hasPermission) {
-            throw new ApplicationException(CustomErrorCode.UNAUTHORIZED);
-        }
-
+        boolean hasPermission = (userId != null)
+                ? chatLogRepository.existsByIdAndUserId(chatId, userId)
+                : chatLogRepository.existsByIdAndSessionId(chatId, sessionId);
+        if (!hasPermission) throw new ApplicationException(CustomErrorCode.UNAUTHORIZED);
         chatLogRepository.deleteById(chatId);
-        log.info("대화 삭제 완료 - 채팅 ID: {}", chatId);
     }
 
-    /**
-     * 챗봇 답변 생성 로직 (규칙 기반)
-     * TODO: 나중에 GPT API로 개선
-     */
-    private String generateChatBotAnswer(String question, User user) {
-        String lowerQuestion = question.toLowerCase();
+    /* ===================== Helper methods ===================== */
 
-        // 인사 관련
-        if (containsAny(lowerQuestion, "안녕", "hi", "hello", "처음")) {
-            return "안녕하세요! 화장실 찾기 도우미 마푸프입니다. 어떤 화장실을 찾고 계신가요?";
-        }
-
-        // 위치 관련 질문
-        if (containsAny(lowerQuestion, "가까운", "근처", "찾아", "어디")) {
-            return String.format("현재 위치에서 가장 가까운 화장실은 강남역 지하 1층 화장실입니다. " +
-                            "도보로 약 3분 거리에 있으며, 24시간 이용 가능합니다.%s",
-                    user != null ? " 더 정확한 위치는 지도에서 확인해보세요!" : "");
-        }
-
-        // 시간 관련 질문
-        if (containsAny(lowerQuestion, "24시간", "밤", "새벽", "언제", "시간")) {
-            return "24시간 이용 가능한 화장실을 안내해드립니다:\n" +
-                    "• 지하철역 (1호선~9호선 대부분)\n" +
-                    "• 24시간 편의점 (CU, GS25, 세븐일레븐)\n" +
-                    "• 일부 공공시설 및 병원";
-        }
-
-        // 청결 관련 질문
-        if (containsAny(lowerQuestion, "깨끗한", "청결", "더러운", "냄새")) {
-            return "청결도가 높은 화장실을 추천드립니다! " +
-                    "최근 리뷰에서 청결도 4.5점 이상을 받은 화장실들을 확인해보세요. " +
-                    "백화점이나 대형마트의 화장실이 일반적으로 깨끗합니다.";
-        }
-
-        // 접근성 관련 질문
-        if (containsAny(lowerQuestion, "장애인", "휠체어", "접근", "경사로", "엘리베이터")) {
-            return "장애인 접근 가능한 화장실을 안내해드립니다:\n" +
-                    "• 휠체어 이용 가능한 넓은 공간\n" +
-                    "• 손잡이 및 비상벨 설치\n" +
-                    "• 낮은 세면대 구비\n" +
-                    "지하철역과 공공시설에 잘 갖춰져 있습니다.";
-        }
-
-        // 아기 관련 질문
-        if (containsAny(lowerQuestion, "아기", "기저귀", "수유", "육아")) {
-            return "육아맘을 위한 화장실 정보를 안내드립니다:\n" +
-                    "• 기저귀 교환대 구비\n" +
-                    "• 수유실 인근 위치\n" +
-                    "• 넓은 공간으로 유모차 이용 가능\n" +
-                    "백화점과 대형마트에서 이용하시기 편리합니다.";
-        }
-
-        // 감사 인사
-        if (containsAny(lowerQuestion, "고마워", "감사", "도움", "잘했어")) {
-            return "도움이 되었다니 기뻐요! 언제든지 화장실 찾기가 필요하시면 말씀해주세요. 😊";
-        }
-
-        // 기본 답변
-        return "죄송합니다. 해당 질문에 대한 정확한 답변을 드리기 어렵습니다. " +
-                "다음과 같은 질문을 해보세요:\n" +
-                "• \"가까운 화장실 어디에 있어?\"\n" +
-                "• \"24시간 이용 가능한 곳 있어?\"\n" +
-                "• \"깨끗한 화장실 추천해줘\"\n" +
-                "• \"장애인 접근 가능한 곳 알려줘\"";
-    }
-
-    /**
-     * 문자열에 키워드가 포함되어 있는지 확인
-     */
-    private boolean containsAny(String text, String... keywords) {
-        return Arrays.stream(keywords).anyMatch(text::contains);
-    }
-
-    /**
-     * 사용자 조회 (로그인 사용자)
-     */
     private User findUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ApplicationException(CustomErrorCode.USER_NOT_FOUND));
     }
 
-    // ChatBotService 내부 헬퍼
+    /** ToiletInfo → 후보 포맷 */
     private List<KakaoLocalService.PlaceDto> toPlaces(List<ToiletInfo> list, Double userLat, Double userLng) {
         return list.stream().map(t -> new KakaoLocalService.PlaceDto(
                 t.getName(),
-                t.getRoadAddress() != null ? t.getRoadAddress() : t.getJibunAddress(),
-                safeFloor(t.getBuildingFloor()),                 // 없으면 ""
-                calcWalkTime(userLat, userLng, t.getLat(), t.getLng()), // 좌표 있으면 도보 n분, 없으면 기본
-                t.getHours() != null ? t.getHours() : "정보 없음"
+                (t.getAddress() != null) ? t.getAddress() : "주소 정보 없음",
+                floorLabel(t.getFloor()),
+                walkTime(userLat, userLng, t),
+                "정보 없음"
         )).toList();
     }
 
-    private String safeFloor(String floor) {
+    private String floorLabel(Integer floor) {
         if (floor == null) return "";
-        return floor; // 필요시 “B1/지하1층/2층” 통일 규칙 적용
+        if (floor == 0) return "지상";
+        if (floor < 0) return "지하" + Math.abs(floor) + "층";
+        return floor + "층";
     }
 
-    private String calcWalkTime(Double uLat, Double uLng, Double tLat, Double tLng) {
-        if (uLat == null || uLng == null || tLat == null || tLng == null) return "도보 약 3분";
-        double meters = haversineMeters(uLat, uLng, tLat, tLng);
-        int minutes = Math.max(1, (int)Math.round(meters / 70.0)); // 분당 70m 가정
-        return "도보 약 " + minutes + "분";
+    private String walkTime(Double userLat, Double userLng, ToiletInfo t) {
+        if (t.getDistance() != null && t.getDistance() > 0) {
+            double meters = t.getDistance();
+            int minutes = Math.max(1, (int)Math.round(meters / 70.0));
+            return "도보 약 " + minutes + "분";
+        }
+        if (userLat != null && userLng != null && t.getLatitude() != null && t.getLongitude() != null) {
+            double meters = haversineMeters(userLat, userLng, t.getLatitude(), t.getLongitude());
+            int minutes = Math.max(1, (int)Math.round(meters / 70.0));
+            return "도보 약 " + minutes + "분";
+        }
+        return "도보 약 3분";
     }
 
     private double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
-        double R = 6371000; // m
+        double R = 6371000.0;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
         double a = Math.sin(dLat/2)*Math.sin(dLat/2)
                 + Math.cos(Math.toRadians(lat1))*Math.cos(Math.toRadians(lat2))
                 * Math.sin(dLon/2)*Math.sin(dLon/2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
+        return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
+    private Optional<Double> parseMinRating(String q) {
+        if (q == null) return Optional.empty();
+        String s = q.toLowerCase();
 
+        // 1) "별점 4.2", "평점 3.5"
+        var m1 = Pattern.compile("(?:별점|평점)\\s*([0-5](?:\\.\\d)?)").matcher(s);
+        if (m1.find()) {
+            try { return Optional.of(Double.parseDouble(m1.group(1))); } catch (Exception ignored) {}
+        }
+
+        // 2) "4.0점", "4점 이상", "평점 4 이상"
+        var m2 = Pattern.compile("([0-5](?:\\.\\d)?)\\s*점(?:\\s*이상)?").matcher(s);
+        if (m2.find()) {
+            try { return Optional.of(Double.parseDouble(m2.group(1))); } catch (Exception ignored) {}
+        }
+
+        // 3) "평점 4 이상"
+        var m3 = Pattern.compile("(?:평점|별점)\\s*([0-5](?:\\.\\d)?)\\s*이상").matcher(s);
+        if (m3.find()) {
+            try { return Optional.of(Double.parseDouble(m3.group(1))); } catch (Exception ignored) {}
+        }
+
+        // 그 외 숫자(예: 5분, 2층 등)는 절대 평점으로 취급하지 않음
+        return Optional.empty();
+    }
+
+    private boolean parseAccessible(String q) {
+        if (q == null) return false;
+        String s = q.toLowerCase();
+        return s.contains("장애인") || s.contains("휠체어") || s.contains("배리어프리");
+    }
+
+    /** "2분", "5분거리", "도보 3분" 등에서 최대 분 추출 */
+    private Optional<Integer> parseMaxMinutes(String q) {
+        if (q == null) return Optional.empty();
+        var m = Pattern.compile("(\\d{1,2})\\s*분").matcher(q);
+        if (m.find()) {
+            try { return Optional.of(Integer.parseInt(m.group(1))); } catch (Exception ignored) {}
+        }
+        return Optional.empty();
+    }
+
+    /** 도보 시간(분) 추정: distance 또는 좌표로 계산, 분당 70m 가정 */
+    private int estimateWalkMinutes(Double userLat, Double userLng, ToiletInfo t) {
+        double meters;
+        if (t.getDistance() != null && t.getDistance() > 0) {
+            // ❌ meters = t.getDistance() * 1000.0;   // 잘못된 변환
+            meters = t.getDistance();                  // ✅ 이미 미터 단위
+        } else if (userLat != null && userLng != null && t.getLatitude() != null && t.getLongitude() != null) {
+            meters = haversineMeters(userLat, userLng, t.getLatitude(), t.getLongitude());
+        } else {
+            meters = 200.0; // 기본 3분 정도
+        }
+        return Math.max(1, (int) Math.round(meters / 70.0));
+    }
 }
-

@@ -2,10 +2,7 @@ package BuyThisDoHippo.Mapoop.domain.toilet.dto;
 
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.projection.ToiletWithDistance;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
