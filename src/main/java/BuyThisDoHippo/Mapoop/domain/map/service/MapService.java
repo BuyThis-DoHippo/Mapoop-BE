@@ -6,6 +6,8 @@ import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerFilterDto;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
+import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
+import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,16 +24,19 @@ public class MapService {
 
     public MapResultDto getMapResult(MarkerFilterDto filter) {
 
-        final GenderType genderType = decideGenderType(filter.getIsGenderSeparated());
         LocalTime now = LocalTime.now(ZoneId.of("Asia/Seoul"));
 
         List<MarkerDto> markers = toiletRepository.findMarkers(
                 filter.getMinRating(),
                 filter.getType(),
-                genderType,
+                filter.getGenderType(),
                 filter.getHasAccessibleToilet(),
                 filter.getHasDiaperTable(),
                 filter.getIsAvailable(),
+                filter.getIsOpen24h(),
+                filter.getHasBidet(),
+                filter.getHasIndoorToilet(),
+                filter.getProvidesSanitaryItems(),
                 now
         );
         tagService.addTagsToMarker(markers);
@@ -39,10 +44,14 @@ public class MapService {
         long totalCount = toiletRepository.countMarkers(
                 filter.getMinRating(),
                 filter.getType(),
-                genderType,
+                filter.getGenderType(),
                 filter.getHasAccessibleToilet(),
                 filter.getHasDiaperTable(),
                 filter.getIsAvailable(),
+                filter.getIsOpen24h(),
+                filter.getHasBidet(),
+                filter.getHasIndoorToilet(),
+                filter.getProvidesSanitaryItems(),
                 now
         );
 
@@ -50,10 +59,5 @@ public class MapService {
                 .totalCount(totalCount)
                 .markers(markers)
                 .build();
-    }
-
-    private GenderType decideGenderType(Boolean isGenderSeparated) {
-        if (isGenderSeparated == null) return null;
-        return isGenderSeparated ? GenderType.SEPARATE : GenderType.UNISEX;
     }
 }

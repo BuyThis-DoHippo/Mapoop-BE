@@ -1,5 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.map.dto;
 
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,9 +13,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MarkerFilterDto {
     Double minRating;
-    ToiletType type;                // 공공/민간
+    ToiletType type;
+    GenderType genderType;
     Boolean isAvailable;
-    Boolean isGenderSeparated;
     Boolean hasAccessibleToilet;
     Boolean hasDiaperTable;
+    Boolean isOpen24h;              // 24시간
+    Boolean hasIndoorToilet;        //가게 안 화장실
+    Boolean hasBidet;                // 비데 설치 여부
+    Boolean providesSanitaryItems;       // 위생용품 제공 여부
 }

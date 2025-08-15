@@ -38,7 +38,10 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
             else (:now >= t.openTime or :now < t.closeTime)
          end),
         t.address,
-        t.floor
+        t.floor,
+        t.open24h,
+        t.openTime,
+        t.closeTime
     )
     from Toilet t
     where (:minRating is null or t.avgRating >= :minRating)
@@ -46,6 +49,10 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
       and (:genderType is null or t.genderType = :genderType)
       and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
       and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
+      and (:isOpen24h is null or t.open24h = :isOpen24h)
+      and (:hasBidet is null or t.hasBidet = :hasBidet)
+      and (:hasIndoorToilet is null or t.hasIndoorToilet = :hasIndoorToilet)
+      and (:providesSanitaryItems is null or t.providesSanitaryItems = :providesSanitaryItems)
       and (
           :isAvailable is null or
           (case
@@ -56,7 +63,7 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
             else (:now >= t.openTime or :now < t.closeTime)
            end) = :isAvailable
       )
-    """)
+""")
     List<MarkerDto> findMarkers(
             @Param("minRating") Double minRating,
             @Param("type") ToiletType type,
@@ -64,28 +71,36 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
             @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
             @Param("hasDiaperTable") Boolean hasDiaperTable,
             @Param("isAvailable") Boolean isAvailable,
-            @Param("now") LocalTime nowTime
+            @Param("isOpen24h") Boolean isOpen24h,
+            @Param("hasBidet") Boolean hasBidet,
+            @Param("hasIndoorToilet") Boolean hasIndoorToilet,
+            @Param("providesSanitaryItems") Boolean providesSanitaryItems,
+            @Param("now") LocalTime now
     );
 
     @Query("""
-        select count(t)
-        from Toilet t
-        where (:minRating is null or t.avgRating >= :minRating)
-          and (:type is null or t.type = :type)
-          and (:genderType is null or t.genderType = :genderType)
-          and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
-          and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
-          and (
-              :isAvailable is null or
-              (case
-                when t.open24h = true then true
-                when t.openTime is null or t.closeTime is null then false
-                when t.openTime < t.closeTime
-                    then (:now between t.openTime and t.closeTime)
-                else (:now >= t.openTime or :now < t.closeTime)
-               end) = :isAvailable
+    select count(t)
+    from Toilet t
+    where (:minRating is null or t.avgRating >= :minRating)
+      and (:type is null or t.type = :type)
+      and (:genderType is null or t.genderType = :genderType)
+      and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
+      and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
+      and (:isOpen24h is null or t.open24h = :isOpen24h)
+      and (:hasBidet is null or t.hasBidet = :hasBidet)
+      and (:hasIndoorToilet is null or t.hasIndoorToilet = :hasIndoorToilet)
+      and (:providesSanitaryItems is null or t.providesSanitaryItems = :providesSanitaryItems)
+      and (
+        :isAvailable is null or
+        (case
+          when t.open24h = true then true
+          when t.openTime is null or t.closeTime is null then false
+          when t.openTime < t.closeTime
+            then (:now between t.openTime and t.closeTime)
+          else (:now >= t.openTime or :now < t.closeTime)
+        end) = :isAvailable
       )
-        """)
+""")
     long countMarkers(
             @Param("minRating") Double minRating,
             @Param("type") ToiletType type,
@@ -93,7 +108,11 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
             @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
             @Param("hasDiaperTable") Boolean hasDiaperTable,
             @Param("isAvailable") Boolean isAvailable,
-            @Param("now") LocalTime nowTime
+            @Param("isOpen24h") Boolean isOpen24h,
+            @Param("hasBidet") Boolean hasBidet,
+            @Param("hasIndoorToilet") Boolean hasIndoorToilet,
+            @Param("providesSanitaryItems") Boolean providesSanitaryItems,
+            @Param("now") LocalTime now
     );
 
     @Query(value = """

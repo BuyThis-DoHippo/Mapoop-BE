@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Data
@@ -21,4 +22,7 @@ public class MarkerDto {
     private Boolean isOpenNow;
     private String address;
     private Integer floor;
+    private Boolean isOpen24h;
+    private LocalTime openTime;
+    private LocalTime closeTime;
 }
