@@ -7,6 +7,7 @@ import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultDto;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
@@ -57,9 +58,6 @@ public class SearchService {
         log.debug("검색 시작 - 검색어: {}", keyword);
         final Pageable pageable = PageRequest.of(filter.getPage(), filter.getPageSize());
 
-        final String type = safeEnumName(filter.getType()); // ToiletType.PUBLIC/STORE or null
-        final String genderType = decideGenderType(filter.getIsGenderSeparated()); // 'SEPARATE'/'UNISEX'/null
-
         // “현재 이용 가능” 계산용 now (HH:mm:ss.nn)
         final String nowTime = java.time.LocalTime.now().toString();
         // MySQL TIME 비교 안정화를 위해 초 단위까지만 자르기
@@ -72,8 +70,8 @@ public class SearchService {
             toilets = toiletRepository.searchByDistance(
                     keyword,
                     filter.getMinRating(),
-                    type,
-                    genderType,
+                    filter.getToiletType(),
+                    filter.getGenderType(),
                     filter.getIsOpen24h(),
                     filter.getHasIndoorToilet(),
                     filter.getHasBidet(),
@@ -90,8 +88,8 @@ public class SearchService {
             toilets = toiletRepository.searchByRating(
                     keyword,
                     filter.getMinRating(),
-                    type,
-                    genderType,
+                    filter.getToiletType(),
+                    filter.getGenderType(),
                     filter.getIsOpen24h(),
                     filter.getHasIndoorToilet(),
                     filter.getHasBidet(),
@@ -118,15 +116,13 @@ public class SearchService {
                 .build();
     }
 
-    private String safeEnumName(ToiletType type) {
+    private String safeToiletType(ToiletType type) {
         return (type == null) ? null : type.name();
     }
 
-    private String decideGenderType(Boolean isGenderSeparated) {
-        if (isGenderSeparated == null) return null;
-        return isGenderSeparated ? "SEPARATE" : "UNISEX";
+    private String safeGenderType(GenderType genderType) {
+        return (genderType == null) ? null : genderType.name();
     }
-
 
     /**
      * 사용자가 타이핑 할 때 마다 호출
@@ -237,28 +233,5 @@ public class SearchService {
                     .build();
         }
     }
-
-//    private void addTagsToToiletInfo(List<ToiletInfo> toiletInfos) {
-//        List<Long> toiletIds = toiletInfos.stream()
-//                .map(ToiletInfo::getToiletId)
-//                .toList();
-//
-//        if(toiletIds.isEmpty()) return;
-//
-//        List<ToiletTag> toiletTags = toiletRepository.findTagsByToiletIds(toiletIds);
-//
-//        // toiletId별로 태그들을 그룹화
-//        Map<Long, List<String>> tagsByToiletId = toiletTags.stream()
-//                .collect(Collectors.groupingBy(
-//                        tt -> tt.getToilet().getId(),
-//                        Collectors.mapping(tt -> tt.getTag().getName(), Collectors.toList())
-//                ));
-//
-//        // ToiletInfo에 태그 설정
-//        toiletInfos.forEach(toiletInfo -> {
-//            List<String> tags = tagsByToiletId.getOrDefault(toiletInfo.getToiletId(), new ArrayList<>());
-//            toiletInfo.setTags(tags);
-//        });
-//    }
 
 }

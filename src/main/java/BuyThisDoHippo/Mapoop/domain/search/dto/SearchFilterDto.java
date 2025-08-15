@@ -1,5 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.search.dto;
 
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,9 +21,9 @@ public class SearchFilterDto {
 
     // 필터링 필드
     Double minRating;
-    ToiletType type;                // 공공/민간
+    String toiletType;
+    String genderType;
     Boolean isAvailable;            // 현재 이용 가능
-    Boolean isGenderSeparated;      // 남녀 분리
     Boolean isOpen24h;              // 24시간
     Boolean hasIndoorToilet;        //가게 안 화장실
     Boolean hasBidet;                // 비데 설치 여부

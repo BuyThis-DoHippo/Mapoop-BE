@@ -3,8 +3,11 @@ package BuyThisDoHippo.Mapoop.domain.search.controller;
 import BuyThisDoHippo.Mapoop.domain.search.dto.*;
 import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
+import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
+import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,18 +48,19 @@ public class SearchController {
     ) {
         log.debug("검색 요청 - 쿼리: '{}', 페이지: {}, 크기: {}",keyword, page, pageSize);
 
-        ToiletType typed = null;
-        if (type != null && !type.isBlank()) {
-            try { typed = ToiletType.valueOf(type.toUpperCase()); }
-            catch (IllegalArgumentException ignore) { /* 잘못된 값: 필터 미적용 */ }
+        String genderType;
+        if(isGenderSeparated != null) {
+            genderType = isGenderSeparated ? "SEPARATE" : "UNISEX";
+        } else {
+            genderType = null;
         }
 
         // 필터 설정 후 검색
         SearchFilterDto filter = SearchFilterDto.builder()
                 .minRating(minRating)
-                .type(typed)
+                .toiletType(type)
+                .genderType(genderType)
                 .isAvailable(isAvailable)
-                .isGenderSeparated(isGenderSeparated)
                 .isOpen24h(isOpen24h)
                 .hasIndoorToilet(hasIndoorToilet)
                 .hasBidet(hasBidet)
