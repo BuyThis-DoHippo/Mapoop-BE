@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatGPTService {
@@ -82,6 +83,11 @@ public class ChatGPTService {
         return sb.toString();
     }
 
-    private static String q(String s) { return "\"" + (s == null ? "" : s.replace("\"", "\\\"")) + "\""; }
-    private static String nz(String s, String d) { return (s == null || s.isBlank()) ? d : s; }
+    private static String q(String s) { 
+        return "\"" + (s == null ? "" : s.replace("\"", "\\\"")) + "\""; 
+    }
+    
+    private static String nz(String s, String d) { 
+        return (s == null || s.isBlank()) ? d : s; 
+    }
 }

@@ -221,8 +221,7 @@ public class ChatBotService {
     private int estimateWalkMinutes(Double userLat, Double userLng, ToiletInfo t) {
         double meters;
         if (t.getDistance() != null && t.getDistance() > 0) {
-            // ❌ meters = t.getDistance() * 1000.0;   // 잘못된 변환
-            meters = t.getDistance();                  // ✅ 이미 미터 단위
+            meters = t.getDistance();  // ✅ 이미 미터 단위
         } else if (userLat != null && userLng != null && t.getLatitude() != null && t.getLongitude() != null) {
             meters = haversineMeters(userLat, userLng, t.getLatitude(), t.getLongitude());
         } else {

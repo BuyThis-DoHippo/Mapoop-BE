@@ -51,8 +51,12 @@ dependencies {
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 
 	// OpenAI GPT API
+<<<<<<< HEAD
 	implementation 'com.openai:openai-java:3.0.2'
 	implementation 'com.openai:openai-java-client-okhttp:3.0.2' // OkHttp 기반 클라이언트
+=======
+	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+>>>>>>> 3b9ee027ee95d75048a94225ccc35ffb73abf47b
 
 
 }
