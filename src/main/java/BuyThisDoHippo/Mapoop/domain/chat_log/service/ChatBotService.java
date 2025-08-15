@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -25,38 +28,83 @@ import java.util.Arrays;
 public class ChatBotService {
 
     private final ChatLogRepository chatLogRepository;
+    private final KakaoLocalService kakaoLocalService;
     private final UserRepository userRepository;
     private final ChatGPTService chatGPTService;  // GPT 서비스 추가
 
     /**
      * 챗봇에게 질문하고 답변받기
      */
-    @Transactional
-    public ChatResponse askQuestion(Long userId, String sessionId, ChatAskRequest request) {
-        log.info("챗봇 질문 요청 - 사용자 ID: {}, 세션 ID: {}, 질문: {}",
-                userId, sessionId, request.getQuestion());
+    @RequiredArgsConstructor
+    @Service
+    public class ChatBotService {
 
-        User user = null;
-        if (userId != null) {
-            user = findUserById(userId);
+        private final SearchService searchService;          // ✅ 추가
+        private final ChatGPTService chatGPTService;
+        private final KakaoLocalService kakaoLocalService;  // 폴백용(선택)
+
+        @Transactional
+        public ChatResponse askQuestion(Long userId, String sessionId, ChatAskRequest req) {
+            User user = (userId != null) ? findUserById(userId) : null;
+
+            // 1) 자연어에서 간단한 필터 뽑기 (선택)
+            Double minRating = parseMinRating(req.getQuestion()).orElse(req.getMinRating());
+            boolean accessibleOnly = parseAccessible(req.getQuestion()) || Boolean.TRUE.equals(req.getAccessibleOnly());
+
+            // 2) 우리 DB 우선 검색
+            var filter = SearchFilterDto.builder()
+                    .keyword(req.getQuestion())     // 단순히 질문 전체를 키워드로 먼저 넣고
+                    .minRating(minRating)           // 별점 필터
+                    .hasAccessibleToilet(accessibleOnly ? true : null)
+                    // 필요시 다른 필터도 매핑
+                    .page(0).pageSize(5)
+                    .build();
+
+            var dbResult = searchService.search(filter, req.getLat(), req.getLng());
+            var toilets = dbResult.getToilets(); // List<ToiletInfo>
+
+            List<KakaoLocalService.PlaceDto> places = toPlaces(toilets, req.getLat(), req.getLng());
+
+            // 3) DB 결과 없고 좌표 있으면 → 카카오 폴백(비즈월렛 준비 전이면 생략 가능)
+            if (places.isEmpty() && req.getLat() != null && req.getLng() != null) {
+                places = kakaoLocalService.searchToilets(req.getLat(), req.getLng(),
+                        req.getRadius() == null ? 500 : req.getRadius());
+            }
+
+            // 4) GPT 호출 (places 있으면 포맷만 하게)
+            String answer = chatGPTService.generateChatResponse(
+                    req.getQuestion(),
+                    user,
+                    places.isEmpty() ? null : places
+            );
+
+            // 5) 저장/반환
+            ChatLog saved = chatLogRepository.save(ChatLog.builder()
+                    .question(req.getQuestion())
+                    .answer(answer)
+                    .user(user)
+                    .sessionId(sessionId)
+                    .build());
+
+            return ChatResponse.from(saved);
         }
 
-        // 2. GPT로 답변 생성 🤖
-        String answer = chatGPTService.generateChatResponse(request.getQuestion(), user);
-
-        ChatLog chatLog = ChatLog.builder()
-                .question(request.getQuestion())
-                .answer(answer)
-                .user(user)
-                .sessionId(sessionId)
-                .build();
-
-        ChatLog savedChatLog = chatLogRepository.save(chatLog);
-
-        log.info("챗봇 답변 완료 - 채팅 ID: {}", savedChatLog.getId());
-
-        return ChatResponse.from(savedChatLog);
+        private Optional<Double> parseMinRating(String q) {
+            if (q == null) return Optional.empty();
+            // “3.5”, “별점 4”, “평점4이상” 등 간단 추출
+            var m = java.util.regex.Pattern.compile("(?:별점|평점)?\\s*([0-5](?:\\.\\d)?)\\s*(?:점|이상)?")
+                    .matcher(q);
+            if (m.find()) {
+                try { return Optional.of(Double.parseDouble(m.group(1))); } catch (Exception ignored) {}
+            }
+            return Optional.empty();
+        }
+        private boolean parseAccessible(String q) {
+            if (q == null) return false;
+            return q.contains("장애인") || q.contains("휠체어") || q.contains("배리어프리");
+        }
     }
+
 
     /**
      * 사용자의 대화 내역 조회 (페이지네이션)
@@ -181,6 +229,41 @@ public class ChatBotService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ApplicationException(CustomErrorCode.USER_NOT_FOUND));
     }
+
+    // ChatBotService 내부 헬퍼
+    private List<KakaoLocalService.PlaceDto> toPlaces(List<ToiletInfo> list, Double userLat, Double userLng) {
+        return list.stream().map(t -> new KakaoLocalService.PlaceDto(
+                t.getName(),
+                t.getRoadAddress() != null ? t.getRoadAddress() : t.getJibunAddress(),
+                safeFloor(t.getBuildingFloor()),                 // 없으면 ""
+                calcWalkTime(userLat, userLng, t.getLat(), t.getLng()), // 좌표 있으면 도보 n분, 없으면 기본
+                t.getHours() != null ? t.getHours() : "정보 없음"
+        )).toList();
+    }
+
+    private String safeFloor(String floor) {
+        if (floor == null) return "";
+        return floor; // 필요시 “B1/지하1층/2층” 통일 규칙 적용
+    }
+
+    private String calcWalkTime(Double uLat, Double uLng, Double tLat, Double tLng) {
+        if (uLat == null || uLng == null || tLat == null || tLng == null) return "도보 약 3분";
+        double meters = haversineMeters(uLat, uLng, tLat, tLng);
+        int minutes = Math.max(1, (int)Math.round(meters / 70.0)); // 분당 70m 가정
+        return "도보 약 " + minutes + "분";
+    }
+
+    private double haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+        double R = 6371000; // m
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat/2)*Math.sin(dLat/2)
+                + Math.cos(Math.toRadians(lat1))*Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon/2)*Math.sin(dLon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
 
 }
 
