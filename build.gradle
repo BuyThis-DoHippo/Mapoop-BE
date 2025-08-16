@@ -50,6 +50,11 @@ dependencies {
 	// JSON 처리
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+	// OpenAI GPT API
+	implementation 'com.openai:openai-java:3.0.2'
+	implementation 'com.openai:openai-java-client-okhttp:3.0.2' // OkHttp 기반 클라이언트
+
+
 	// google geocoding api 사용
 	implementation group: 'com.google.maps', name: 'google-maps-services', version: '2.2.0'
 }
