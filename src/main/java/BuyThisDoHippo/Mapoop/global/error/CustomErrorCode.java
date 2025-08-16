@@ -30,8 +30,8 @@ public enum CustomErrorCode {
     REDIS_CONNECTION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, 4000, "Redis 연결에 실패했습니다."),
     REDIS_OPERATION_FAILED(HttpStatus.BAD_GATEWAY, 4001, "Redis 작업에 실패했습니다." ),
 
-    // 5000: 태그 에러
-    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 5000, "등록된 태그가 아닙니다.");
+    // 6000: 태그 에러
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 6000, "등록된 태그가 아닙니다.");
 
     private final HttpStatus status;
     private final Integer code;
