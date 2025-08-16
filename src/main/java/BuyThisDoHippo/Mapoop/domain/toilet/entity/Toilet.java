@@ -43,6 +43,9 @@ public class Toilet extends BaseEntity {
     @Column(nullable = false)
     private Boolean isPartnership;
 
+    private String description; // 장소(가게) 설명
+    private String particulars; // 화장실 특이사항
+
     /** 위치 관련 */
     @Column(nullable = false)
     private Double latitude;    // 위도
@@ -55,7 +58,7 @@ public class Toilet extends BaseEntity {
 
     /** 평점 관련 */
     @Column(name = "avg_rating")
-    private Double avgRating;   // 1 ~ 5
+    private Double avgRating;
     private Integer totalReviews;
 
     /** 운영 정보 */
@@ -81,7 +84,7 @@ public class Toilet extends BaseEntity {
     @Column(name = "provides_sanitary_items", nullable = false)
     private boolean providesSanitaryItems;
 
-    @Column(name = "has_diaper_table", nullable = false)
+    @Column(name = "has_diaper_changing", nullable = false)
     private boolean hasDiaperTable;
 
     @Column(name = "has_accessible_toilet", nullable = false)

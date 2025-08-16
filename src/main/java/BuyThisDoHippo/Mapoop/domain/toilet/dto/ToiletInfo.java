@@ -14,6 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/* Search 응답을 위한 화장실 기본 정보 Dto */
 public class ToiletInfo {
     private Long toiletId;
     private String name;

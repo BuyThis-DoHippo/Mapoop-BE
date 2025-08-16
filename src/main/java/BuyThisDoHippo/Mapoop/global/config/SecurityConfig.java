@@ -46,7 +46,6 @@ public class SecurityConfig {
 
                         // 공개 API (인증 불필요)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/toilets").permitAll()
                         .requestMatchers("/api/toilets/{id}").permitAll()
                         .requestMatchers("/api/toilets/emergency").permitAll()
                         .requestMatchers("/api/toilets/{id}/reviews").permitAll()

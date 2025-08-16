@@ -3,10 +3,20 @@ package BuyThisDoHippo.Mapoop.domain.tag.entity;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.global.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Table(
+        name = "toilet_tag",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"toilet_id", "tag_id"})
+)
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ToiletTag extends BaseEntity {
 
     @Id
