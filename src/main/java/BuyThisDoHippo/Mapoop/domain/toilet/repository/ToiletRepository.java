@@ -22,98 +22,27 @@ public interface ToiletRepository extends JpaRepository<Toilet, Long> {
 
     List<Toilet> findAllByOrderByAvgRatingDesc(Pageable pageable);
 
-    @Query("""
-    select new BuyThisDoHippo.Mapoop.domain.map.dto.MarkerDto(
-        t.id,
-        t.latitude,
-        t.longitude,
-        t.name,
-        t.avgRating,
-        null,
-        (case
-            when t.open24h = true then true
-            when t.openTime is null or t.closeTime is null then false
-            when t.openTime < t.closeTime
-                then (:now between t.openTime and t.closeTime)
-            else (:now >= t.openTime or :now < t.closeTime)
-         end),
-        t.address,
-        t.floor,
-        t.open24h,
-        t.openTime,
-        t.closeTime
-    )
-    from Toilet t
-    where (:minRating is null or t.avgRating >= :minRating)
-      and (:type is null or t.type = :type)
-      and (:genderType is null or t.genderType = :genderType)
-      and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
-      and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
-      and (:isOpen24h is null or t.open24h = :isOpen24h)
-      and (:hasBidet is null or t.hasBidet = :hasBidet)
-      and (:hasIndoorToilet is null or t.hasIndoorToilet = :hasIndoorToilet)
-      and (:providesSanitaryItems is null or t.providesSanitaryItems = :providesSanitaryItems)
-      and (
-          :isAvailable is null or
-          (case
-            when t.open24h = true then true
-            when t.openTime is null or t.closeTime is null then false
-            when t.openTime < t.closeTime
-                then (:now between t.openTime and t.closeTime)
-            else (:now >= t.openTime or :now < t.closeTime)
-           end) = :isAvailable
-      )
-""")
-    List<MarkerDto> findMarkers(
-            @Param("minRating") Double minRating,
-            @Param("type") ToiletType type,
-            @Param("genderType") GenderType genderType,
-            @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
-            @Param("hasDiaperTable") Boolean hasDiaperTable,
-            @Param("isAvailable") Boolean isAvailable,
-            @Param("isOpen24h") Boolean isOpen24h,
-            @Param("hasBidet") Boolean hasBidet,
-            @Param("hasIndoorToilet") Boolean hasIndoorToilet,
-            @Param("providesSanitaryItems") Boolean providesSanitaryItems,
-            @Param("now") LocalTime now
-    );
+    // 임시: 빈 결과 반환 (쿼리 생성 안 함)
+    default List<MarkerDto> findMarkers(
+            Double minRating,
+            ToiletType type,
+            GenderType genderType,
+            Boolean a, Boolean b, Boolean c, Boolean d, Boolean e, Boolean f, Boolean g,
+            LocalTime now
+    ) {
+        return java.util.Collections.emptyList();
+    }
 
-    @Query("""
-    select count(t)
-    from Toilet t
-    where (:minRating is null or t.avgRating >= :minRating)
-      and (:type is null or t.type = :type)
-      and (:genderType is null or t.genderType = :genderType)
-      and (:hasAccessibleToilet is null or t.hasAccessibleToilet = :hasAccessibleToilet)
-      and (:hasDiaperTable is null or t.hasDiaperTable = :hasDiaperTable)
-      and (:isOpen24h is null or t.open24h = :isOpen24h)
-      and (:hasBidet is null or t.hasBidet = :hasBidet)
-      and (:hasIndoorToilet is null or t.hasIndoorToilet = :hasIndoorToilet)
-      and (:providesSanitaryItems is null or t.providesSanitaryItems = :providesSanitaryItems)
-      and (
-        :isAvailable is null or
-        (case
-          when t.open24h = true then true
-          when t.openTime is null or t.closeTime is null then false
-          when t.openTime < t.closeTime
-            then (:now between t.openTime and t.closeTime)
-          else (:now >= t.openTime or :now < t.closeTime)
-        end) = :isAvailable
-      )
-""")
-    long countMarkers(
-            @Param("minRating") Double minRating,
-            @Param("type") ToiletType type,
-            @Param("genderType") GenderType genderType,
-            @Param("hasAccessibleToilet") Boolean hasAccessibleToilet,
-            @Param("hasDiaperTable") Boolean hasDiaperTable,
-            @Param("isAvailable") Boolean isAvailable,
-            @Param("isOpen24h") Boolean isOpen24h,
-            @Param("hasBidet") Boolean hasBidet,
-            @Param("hasIndoorToilet") Boolean hasIndoorToilet,
-            @Param("providesSanitaryItems") Boolean providesSanitaryItems,
-            @Param("now") LocalTime now
-    );
+    // 임시: 0 반환
+    default long countMarkers(
+            Double minRating,
+            ToiletType type,
+            GenderType genderType,
+            Boolean a, Boolean b, Boolean c, Boolean d, Boolean e, Boolean f, Boolean g,
+            LocalTime now
+    ) {
+        return 0L;
+    }
 
     @Query(value = """
     SELECT 

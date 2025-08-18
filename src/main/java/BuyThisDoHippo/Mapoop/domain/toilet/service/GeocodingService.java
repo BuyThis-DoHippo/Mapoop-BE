@@ -99,7 +99,6 @@ public class GeocodingService {
                     .bodyToMono(GoogleGeocodingResponse.class)
                     .timeout(Duration.ofSeconds(10))
                     .block();
-            log.debug("[Geocoding] 응답 객체 수신: {}", response);
             return parseGeocodingResponse(response, address.trim());
             
         } catch (ApplicationException e) {

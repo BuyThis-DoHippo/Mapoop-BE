@@ -3,7 +3,6 @@ package BuyThisDoHippo.Mapoop.domain.toilet.service;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterRequest;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterResponse;
-import BuyThisDoHippo.Mapoop.domain.toilet.entity.GenderType;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
@@ -37,47 +36,42 @@ public class ToiletService {
         ToiletType toiletType = ToiletType.fromString(request.getType())
                 .orElseThrow(() -> new ApplicationException(CustomErrorCode.INVALID_TOILET_TYPE));
 
-        GenderType genderType = GenderType.fromString(request.getGenderType())
-                .orElseThrow(() -> new ApplicationException(CustomErrorCode.INVALID_GENDER_TYPE));
 
-        final boolean isOpen24h = Boolean.TRUE.equals(request.getOpen24h());
+        final boolean isOpen24h = Boolean.TRUE.equals(request.getIsOpen24h());
         final LocalTime openTime = isOpen24h ? null : request.getOpenTime();
         final LocalTime closeTime = isOpen24h ? null : request.getCloseTime();
 
         // 좌표 변환
         GeocodingService.GeoLocation geoLocation = geocodingService.getGeoLocation(request.getAddress());
+        if (geoLocation == null || geoLocation.getLat() == null || geoLocation.getLon() == null) {
+            throw new ApplicationException(CustomErrorCode.GEOCODING_FAILED);
+        }
 
         Toilet newToilet = Toilet.builder()
                 .name(request.getName().trim())
                 .type(toiletType)
-                .genderType(genderType)
                 .isPartnership(false)
                 .latitude(geoLocation.getLat())
                 .longitude(geoLocation.getLon())
-                .address(geoLocation.getAddress())  // formatted address 저장
+                .address(geoLocation.getAddress() != null ? geoLocation.getAddress() : request.getAddress())
                 .floor(request.getFloor())
-                .avgRating(null)
+                .openTime(openTime)
+                .closeTime(closeTime)
+                .open24h(isOpen24h)
+                .avgRating(0.0)
                 .totalReviews(0)
                 .description(request.getDescription())
                 .particulars(request.getParticulars())
-                .open24h(request.getOpen24h())
-                .openTime(openTime)
-                .closeTime(closeTime)
-                .hasDiaperTable(request.getHasDiaperTable())
-                .hasIndoorToilet(request.getHasIndoorToilet())
-                .hasBidet(request.getHasBidet())
-                .providesSanitaryItems(request.getProvidesSanitaryItems())
-                .hasAccessibleToilet(request.getHasAccessibleToilet())
                 .user(user)
                 .build();
 
-        Long toiletId = toiletRepository.save(newToilet).getId();
-        log.debug("화장실 등록 완료 - id: {}, name: {}", newToilet.getId(), newToilet.getName());
-
-        // Tag 정보 있다면 연결
-        tagService.attachTags(toiletId, request.getTags());
+        Toilet saved = toiletRepository.save(newToilet);
         /// TODO: Image 함께 요청됐다면 연결
 
+        // 함께 요청된 태그 연결
+        tagService.attachByNames(saved, request.getTags());
+
+        log.debug("화장실 등록 완료 - id: {}, name: {}", newToilet.getId(), newToilet.getName());
         return ToiletRegisterResponse.builder()
                 .id(newToilet.getId())
                 .name(newToilet.getName())

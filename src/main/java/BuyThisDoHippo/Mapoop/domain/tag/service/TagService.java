@@ -23,93 +23,92 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TagService {
 
-    private final ToiletRepository toiletRepository;
+//    private final ToiletRepository toiletRepository;
     private final TagRepository tagRepository;
     private final ToiletTagRepository toiletTagRepository;
 
+    // 태그 이름만 받아서 화장실-태그 연결
     @Transactional
-    public void attachTags(Long toiletId, List<String> tags) {
-        log.debug("화장실 - 태그 설정 요청");
-        if (tags == null || tags.isEmpty()) return;
+    public void attachByNames(Toilet toilet, List<String> tagNames) {
+        List<String> names = normalizeNames(tagNames);
+        List<Tag> tags = resolveTags(names);
+        attachTags(toilet, tags);
+    }
 
-        // 입력 받은 태그들 전처리 과정
-        List<String> names = tags.stream()
+    // 태그명 전처리
+    @Transactional(readOnly = true)
+    public List<String> normalizeNames(List<String> raw) {
+        if (raw == null || raw.isEmpty()) return Collections.emptyList();
+        return raw.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .distinct()
                 .toList();
-        if (names.isEmpty()) return;
-
-        Toilet toilet = toiletRepository.findById(toiletId)
-                .orElseThrow(() -> new ApplicationException(CustomErrorCode.TOILET_NOT_FOUND));
-
-        List<Tag> existing = tagRepository.findAllByNameIn(names);
-        Set<String> foundNames = existing.stream().map(Tag::getName).collect(Collectors.toSet());
-        List<String> missing = names.stream().filter(n -> !foundNames.contains(n)).toList();
-        if (!missing.isEmpty()) {
-            throw new ApplicationException(CustomErrorCode.TAG_NOT_FOUND);
-        }
-
-        Set<Long> alreadyAttachedTagIds =
-                toiletTagRepository.findByToiletId(toiletId).stream()
-                        .map(tt -> tt.getTag().getId())
-                        .collect(Collectors.toSet());
-
-        List<ToiletTag> toSave = existing.stream()
-                .filter(tag -> !alreadyAttachedTagIds.contains(tag.getId()))
-                .map(tag -> ToiletTag.builder().toilet(toilet).tag(tag).build())
-                .toList();
-
-        if (!toSave.isEmpty()) {
-            toiletTagRepository.saveAll(toSave);
-        }
-
-        log.debug("화장실 - 태그 설정 완료!");
     }
 
-    public void addTagsToToiletInfo(List<ToiletInfo> toiletInfos) {
-        List<Long> toiletIds = toiletInfos.stream()
-                .map(ToiletInfo::getToiletId)
+    // 태그 조회
+    @Transactional(readOnly = true)
+    public List<Tag> resolveTags(List<String> names) {
+        if (names == null || names.isEmpty())
+            return Collections.emptyList();
+
+        List<Tag> found = tagRepository.findAllByNameIn(names);
+
+        if (found.size() != names.size()) {
+            throw new ApplicationException(CustomErrorCode.TAG_NOT_FOUND);
+        }
+        return found;
+    }
+
+    @Transactional
+    public void attachTags(Toilet toilet, List<Tag> tags) {
+        Long toiletId = toilet.getId();
+        if (tags == null || tags.isEmpty()) return;
+
+        Set<Long> targetTagIds = tags.stream()
+                .map(Tag::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (targetTagIds.isEmpty()) return;
+
+        Set<Long> already = toiletTagRepository.findAttachedTagIds(toiletId, targetTagIds);
+
+        List<ToiletTag> links = tags.stream()
+                .filter(t -> t.getId() != null && !already.contains(t.getId()))
+                .map(t -> ToiletTag.link(toilet, t))
                 .toList();
 
-        if(toiletIds.isEmpty()) return;
+        if (!links.isEmpty()) {
+            toiletTagRepository.saveAll(links);
+        }
+        log.debug("태그 연결 완료");
+    }
 
-        List<ToiletTag> toiletTags = toiletRepository.findTagsByToiletIds(toiletIds);
 
-        // toiletId별로 태그들을 그룹화
-        Map<Long, List<String>> tagsByToiletId = toiletTags.stream()
+    public void addTagsToToiletInfo(List<ToiletInfo> toiletInfos) {
+        List<Long> ids = toiletInfos.stream().map(ToiletInfo::getToiletId).toList();
+        if (ids.isEmpty()) return;
+
+        Map<Long, List<String>> tagsById = toiletTagRepository.findTagNamesByToiletIds(ids).stream()
                 .collect(Collectors.groupingBy(
-                        tt -> tt.getToilet().getId(),
-                        Collectors.mapping(tt -> tt.getTag().getName(), Collectors.toList())
+                        ToiletTagRepository.ToiletIdTagName::getToiletId,
+                        Collectors.mapping(ToiletTagRepository.ToiletIdTagName::getTagName, Collectors.toList())
                 ));
 
-        // ToiletInfo에 태그 설정
-        toiletInfos.forEach(toiletInfo -> {
-            List<String> tags = tagsByToiletId.getOrDefault(toiletInfo.getToiletId(), new ArrayList<>());
-            toiletInfo.setTags(tags);
-        });
+        toiletInfos.forEach(info -> info.setTags(tagsById.getOrDefault(info.getToiletId(), List.of())));
     }
 
     public void addTagsToMarker(List<MarkerDto> markers) {
-        List<Long> toiletIds = markers.stream()
-                .map(MarkerDto::getToiletId)
-                .toList();
+        List<Long> ids = markers.stream().map(MarkerDto::getToiletId).toList();
+        if (ids.isEmpty()) return;
 
-        if(toiletIds.isEmpty()) return;
-
-        List<ToiletTag> toiletTags = toiletRepository.findTagsByToiletIds(toiletIds);
-
-        Map<Long, List<String>> tagsByToiletId = toiletTags.stream()
+        Map<Long, List<String>> tagsById = toiletTagRepository.findTagNamesByToiletIds(ids).stream()
                 .collect(Collectors.groupingBy(
-                        tt -> tt.getToilet().getId(),
-                        Collectors.mapping(tt -> tt.getTag().getName(), Collectors.toList())
+                        ToiletTagRepository.ToiletIdTagName::getToiletId,
+                        Collectors.mapping(ToiletTagRepository.ToiletIdTagName::getTagName, Collectors.toList())
                 ));
 
-        markers.forEach(toiletInfo -> {
-            List<String> tags = tagsByToiletId.getOrDefault(toiletInfo.getToiletId(), new ArrayList<>());
-            toiletInfo.setTags(tags);
-        });
-
+        markers.forEach(m -> m.setTags(tagsById.getOrDefault(m.getToiletId(), List.of())));
     }
 }
