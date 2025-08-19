@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MapResultDto {
-    private Long totalCount;
-    private List<MarkerDto> markers;
+public class MapResultResponse {
+    private int totalCount;
+    private List<MarkerInfo> markers;
 }

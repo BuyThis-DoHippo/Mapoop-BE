@@ -1,13 +1,12 @@
 package BuyThisDoHippo.Mapoop.domain.tag.service;
 
-import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerDto;
+import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerInfo;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.Tag;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.TagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.ToiletTagRepository;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
-import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
 import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
 import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -155,8 +154,8 @@ public class TagService {
         toiletInfos.forEach(info -> info.setTags(tagsById.getOrDefault(info.getToiletId(), List.of())));
     }
 
-    public void addTagsToMarker(List<MarkerDto> markers) {
-        List<Long> ids = markers.stream().map(MarkerDto::getToiletId).toList();
+    public void addTagsToMarker(List<MarkerInfo> markers) {
+        List<Long> ids = markers.stream().map(MarkerInfo::getToiletId).toList();
         if (ids.isEmpty()) return;
 
         Map<Long, List<String>> tagsById = toiletTagRepository.findTagNamesByToiletIds(ids).stream()
