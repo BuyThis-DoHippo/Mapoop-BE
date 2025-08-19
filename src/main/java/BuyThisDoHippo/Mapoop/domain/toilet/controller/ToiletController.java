@@ -1,5 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.controller;
 
+import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletDetailResponse;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterRequest;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterResponse;
 import BuyThisDoHippo.Mapoop.domain.toilet.service.ToiletService;
@@ -12,9 +13,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
+
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/toilet")
+@RequestMapping("/api/toilets")
 public class ToiletController {
     private final ToiletService toiletService;
 
@@ -37,5 +40,11 @@ public class ToiletController {
 
         ToiletRegisterResponse response = toiletService.createToilet(request, userId);
         return CommonResponse.onSuccess(response, "화장실 등록 성공");
+    }
+
+    @GetMapping("/{toiletId}")
+    public CommonResponse<ToiletDetailResponse> getDetailToilet(@PathVariable Long toiletId) {
+        ToiletDetailResponse response = toiletService.getToiletDetail(toiletId, LocalTime.now());
+        return CommonResponse.onSuccess(response, "화장실 상세 조회 성공");
     }
 }

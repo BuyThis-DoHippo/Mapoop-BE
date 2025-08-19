@@ -1,6 +1,8 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.service;
 
+import BuyThisDoHippo.Mapoop.domain.tag.repository.ToiletTagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
+import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletDetailResponse;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterRequest;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterResponse;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -26,6 +29,7 @@ public class ToiletService {
     private final UserRepository userRepository;
     private final GeocodingService geocodingService;
     private final TagService tagService;
+    private final ToiletTagRepository toiletTagRepository;
 
     public ToiletRegisterResponse createToilet(ToiletRegisterRequest request, Long userId) {
         log.debug("화장실 등록 요청 - 등록자 id: {}", userId);
@@ -76,6 +80,42 @@ public class ToiletService {
                 .id(newToilet.getId())
                 .name(newToilet.getName())
                 .type(newToilet.getType().name())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ToiletDetailResponse getToiletDetail(Long toiletId, LocalTime now) {
+        Toilet toilet = toiletRepository.findById(toiletId)
+                .orElseThrow(() -> new ApplicationException(CustomErrorCode.TOILET_NOT_FOUND));
+
+        List<String> tagNames = toiletTagRepository.findTagNamesByToiletId(toiletId);
+
+        return ToiletDetailResponse.builder()
+                .id(toilet.getId())
+                .name(toilet.getName())
+                .type(toilet.getType().name())
+                .location(ToiletDetailResponse.Location.builder()
+                        .latitude(toilet.getLatitude())
+                        .longitude(toilet.getLongitude())
+                        .address(toilet.getAddress())
+                        .floor(toilet.getFloor())
+                        .build()
+                )
+                .rating(ToiletDetailResponse.Rating.builder()
+                        .avgRating(toilet.getAvgRating())
+                        .totalReviews(toilet.getTotalReviews())
+                        .build())
+                .hours(ToiletDetailResponse.Hours.builder()
+                        .openTime(toilet.getOpenTime())
+                        .closeTime(toilet.getCloseTime())
+                        .isOpen24h(Boolean.TRUE.equals(toilet.getOpen24h()))
+                        .isOpenNow(toilet.isOpenNow(LocalTime.now()))
+                        .build())
+                .isPartnership(Boolean.TRUE.equals(toilet.getIsPartnership()))
+                .description(toilet.getDescription())
+                .particulars(toilet.getParticulars())
+                .images(List.of())               // 이미지 나중 반영
+                .tags(tagNames)
                 .build();
     }
 }

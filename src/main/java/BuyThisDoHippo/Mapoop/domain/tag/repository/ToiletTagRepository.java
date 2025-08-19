@@ -23,18 +23,26 @@ public interface ToiletTagRepository extends JpaRepository<ToiletTag, Long> {
 
 
 
-
-
     // 인터페이스 기반 Projection
     interface ToiletIdTagName {
         Long getToiletId();
         String getTagName();
     }
 
+    // 다건 (id-name 연결해서 응답)
     @Query("""
         select tt.toilet.id as toiletId, tt.tag.name as tagName
         from ToiletTag tt
         where tt.toilet.id in :toiletIds
     """)
     List<ToiletIdTagName> findTagNamesByToiletIds(@Param("toiletIds") Collection<Long> toiletIds);
+
+    // 단건 (name만 필요함)
+    @Query("""
+    select tg.name
+    from ToiletTag tt
+    join tt.tag tg
+    where tt.toilet.id = :toiletId
+""")
+    List<String> findTagNamesByToiletId(@Param("toiletId") Long toiletId);
 }
