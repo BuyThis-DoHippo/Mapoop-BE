@@ -4,6 +4,7 @@ import BuyThisDoHippo.Mapoop.global.auth.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -46,7 +47,7 @@ public class SecurityConfig {
 
                         // 공개 API (인증 불필요)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/toilets/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/toilets/*").permitAll()
                         .requestMatchers("/api/toilets/emergency").permitAll()
                         .requestMatchers("/api/toilets/{id}/reviews").permitAll()
                         .requestMatchers("/api/tags").permitAll()
@@ -57,7 +58,8 @@ public class SecurityConfig {
 
                         // 인증 필요한 API
                         .requestMatchers("/api/users/**").authenticated()
-                        .requestMatchers("/api/toilets").authenticated()  // POST는 인증 필요
+                        .requestMatchers(HttpMethod.POST,"/api/toilets").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "api/toilets/*").authenticated()
                         .requestMatchers("/api/reviews/**").authenticated()
 
                         // 나머지는 모두 인증 필요

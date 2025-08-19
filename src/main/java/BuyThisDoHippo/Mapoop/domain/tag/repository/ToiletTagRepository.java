@@ -2,6 +2,7 @@ package BuyThisDoHippo.Mapoop.domain.tag.repository;
 
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,8 +20,20 @@ public interface ToiletTagRepository extends JpaRepository<ToiletTag, Long> {
     """)
     Set<Long> findAttachedTagIds(@Param("toiletId") Long toiletId, @Param("tagIds") Collection<Long> tagIds);
 
+    @Query("""
+        select tt.tag.id
+        from ToiletTag tt
+        where tt.toilet.id = :toiletId
+    """)
+    Set<Long> findTagIdsByToiletId(@Param("toiletId") Long toiletId);
 
-
+    @Modifying
+    @Query("""
+        delete from ToiletTag tt
+        where tt.toilet.id = :toiletId and tt.tag.id in :removeTagIds
+    """)
+    void deleteByToiletIdAndTagIdIn(@Param("toiletId") Long toiletId,
+                                   @Param("removeTagIds") Collection<Long> removeTagIds);
 
 
     // 인터페이스 기반 Projection

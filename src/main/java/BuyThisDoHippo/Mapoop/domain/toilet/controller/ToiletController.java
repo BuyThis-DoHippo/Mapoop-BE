@@ -3,6 +3,7 @@ package BuyThisDoHippo.Mapoop.domain.toilet.controller;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletDetailResponse;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterRequest;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterResponse;
+import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletUpdateRequest;
 import BuyThisDoHippo.Mapoop.domain.toilet.service.ToiletService;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
@@ -46,5 +47,17 @@ public class ToiletController {
     public CommonResponse<ToiletDetailResponse> getDetailToilet(@PathVariable Long toiletId) {
         ToiletDetailResponse response = toiletService.getToiletDetail(toiletId, LocalTime.now());
         return CommonResponse.onSuccess(response, "화장실 상세 조회 성공");
+    }
+
+    @PutMapping("/{toiletId}")
+    public CommonResponse<Void> updateToilet(
+            @PathVariable Long toiletId,
+            @Valid @RequestBody ToiletUpdateRequest request,
+            Authentication authentication
+    ) {
+        // 로그인 유저 정보 가져오기
+        Long userId = Long.valueOf(authentication.getName());
+        toiletService.updateToilet(toiletId, userId, request);
+        return CommonResponse.onSuccess(null, "화장실 정보 수정 성공");
     }
 }

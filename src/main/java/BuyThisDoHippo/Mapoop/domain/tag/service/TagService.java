@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,8 +23,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TagService {
+    private static final String TAG_AVAILABLE_NOW = "현재이용가능";
 
-//    private final ToiletRepository toiletRepository;
     private final TagRepository tagRepository;
     private final ToiletTagRepository toiletTagRepository;
 
@@ -83,6 +84,61 @@ public class TagService {
             toiletTagRepository.saveAll(links);
         }
         log.debug("태그 연결 완료");
+    }
+
+    @Transactional
+    public void syncTags(Toilet toilet, List<String> newTagNames) {
+        Long toiletId = toilet.getId();
+        List<String> names = normalizeNames(newTagNames);
+
+        if (names.isEmpty()) {
+            // 완전 삭제
+            toiletTagRepository.deleteAll(toiletTagRepository.findByToiletId(toiletId));
+            return;
+        }
+
+        // 1 존재하는 태그 조회
+        List<Tag> targetTags = resolveTags(names);
+        Set<Long> targetIds = targetTags.stream().map(Tag::getId).collect(Collectors.toSet());
+
+        // 2 현재 연결된 태그 id 조회
+        Set<Long> currentIds = toiletTagRepository.findTagIdsByToiletId(toiletId);
+
+        // 3 삭제해야 하는 태그 id
+        Set<Long> removeIds = new HashSet<>(currentIds);
+        removeIds.removeAll(targetIds);
+        if (!removeIds.isEmpty()) {
+            toiletTagRepository.deleteByToiletIdAndTagIdIn(toiletId, removeIds);
+        }
+
+        // 4 최종 추가
+        Set<Long> already = toiletTagRepository.findAttachedTagIds(toiletId, targetIds);
+        List<ToiletTag> links = targetTags.stream()
+                .filter(t -> !already.contains(t.getId()))
+                .map(t -> ToiletTag.link(toilet, t))
+                .toList();
+
+        if (!links.isEmpty()) {
+            toiletTagRepository.saveAll(links);
+        }
+    }
+
+    private void appendAvailabilityTag(List<String> tags) {
+        if (tags == null) return;
+        if (!tags.contains(TAG_AVAILABLE_NOW)) {
+            tags.add(TAG_AVAILABLE_NOW);
+        }
+    }
+
+    private boolean computeIsOpenNow(Boolean open24h, LocalTime open, LocalTime close, LocalTime now) {
+        if (Boolean.TRUE.equals(open24h)) return true;
+        if (open == null || close == null || now == null) return false;
+        if (open.equals(close)) return false;
+        if (open.isBefore(close)) {
+            return !now.isBefore(open) && now.isBefore(close);
+        } else {
+            return !now.isBefore(open) || now.isBefore(close);
+        }
     }
 
 
