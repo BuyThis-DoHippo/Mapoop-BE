@@ -42,9 +42,7 @@ public class ToiletDetailResponse {
     @Getter @Builder
     @AllArgsConstructor @NoArgsConstructor
     public static class Rating {
-        @JsonProperty("avg_rating")
         private Double avgRating;
-        @JsonProperty("total_reviews")
         private Integer totalReviews;
     }
 
@@ -52,18 +50,11 @@ public class ToiletDetailResponse {
     @Getter @Builder
     @AllArgsConstructor @NoArgsConstructor
     public static class Hours {
-        @JsonProperty("openTime")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
         private LocalTime openTime;
-
-        @JsonProperty("closeTime")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
         private LocalTime closeTime;
-
-        @JsonProperty("isOpen24h")
         private boolean isOpen24h;
-
-        @JsonProperty("isOpenNow")
         private boolean isOpenNow; // 서버가 계산해서 내려줌
     }
 }
