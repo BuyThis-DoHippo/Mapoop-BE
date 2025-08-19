@@ -20,7 +20,7 @@ public class ToiletInfo {
     private String address;
     private Integer floor;
     private Double rating;
-    private Double distance;    // km 단위
+    private Integer distance;    // m 단위
     private List<String> tags;
     private Boolean isPartnership;
 
@@ -32,9 +32,8 @@ public class ToiletInfo {
             .latitude(toilet.getLatitude())
             .longitude(toilet.getLongitude())
             .address(toilet.getAddress())
-            .floor(toilet.getFloor())
             .rating(toilet.getAvgRating())
-            .tags(toilet.getTags().stream()
+            .tags(toilet.getToiletTags().stream()
                     .map(toiletTag -> toiletTag.getTag().getName()
                     ).toList())
             .isPartnership(toilet.getIsPartnership())
@@ -48,9 +47,7 @@ public class ToiletInfo {
                 .latitude(projection.getLatitude())
                 .longitude(projection.getLongitude())
                 .address(projection.getAddress())
-                .floor(projection.getFloor())
                 .rating(projection.getAvgRating())
-                .distance(projection.getDistance())
                 .tags(new ArrayList<>()) // 나중에 추가
                 .isPartnership(projection.getIsPartnership())
                 .build();

@@ -12,10 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SearchResultDto {
-
-    private Long totalCount;
+public class SearchResultResponse {
+    private int totalCount;
     private List<ToiletInfo> toilets;
-    private int totalPages;
-    private int currentPage;
 }
