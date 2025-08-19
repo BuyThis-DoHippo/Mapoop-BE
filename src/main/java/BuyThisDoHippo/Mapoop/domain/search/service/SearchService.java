@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 @Transactional
 public class SearchService {
 
-    private final TagService tagService;
     private final ToiletRepository toiletRepository;
     private final TagRepository tagRepository;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -93,6 +92,7 @@ public class SearchService {
             return ToiletInfo.builder()
                     .toiletId(t.getId())
                     .name(t.getName())
+                    .type(t.getType().name())
                     .latitude(t.getLatitude())
                     .longitude(t.getLongitude())
                     .address(t.getAddress())
@@ -123,7 +123,6 @@ public class SearchService {
         return tagRepository.findIdsByNames(normalized);
     }
 
-    /** 하버사인(m) */
     private int distanceMeters(double lat1, double lon1, Double lat2, Double lon2) {
         if (lat2 == null || lon2 == null) return Integer.MAX_VALUE;
         double R = 6371000.0;
@@ -247,6 +246,7 @@ public class SearchService {
             return ToiletInfo.builder()
                     .toiletId(t.getId())
                     .name(t.getName())
+                    .type(t.getType().name())
                     .latitude(t.getLatitude())
                     .longitude(t.getLongitude())
                     .address(t.getAddress())

@@ -15,6 +15,7 @@ import java.util.List;
 public class ToiletInfo {
     private Long toiletId;
     private String name;
+    private String type;
     private Double latitude;
     private Double longitude;
     private String address;
@@ -38,20 +39,6 @@ public class ToiletInfo {
                     ).toList())
             .isPartnership(toilet.getIsPartnership())
             .build();
-    }
-
-    public static ToiletInfo fromProjection(ToiletWithDistance projection) {
-        return ToiletInfo.builder()
-                .toiletId(projection.getId())
-                .name(projection.getName())
-                .latitude(projection.getLatitude())
-                .longitude(projection.getLongitude())
-                .address(projection.getAddress())
-                .rating(projection.getAvgRating())
-                .tags(new ArrayList<>()) // 나중에 추가
-                .isPartnership(projection.getIsPartnership())
-                .build();
-
     }
 
 }
