@@ -88,33 +88,31 @@ public class SearchController {
      * 2. 리뷰 좋은 화장실 목록 조회 (없다면)
      */
     @GetMapping("/home")
-    public CommonResponse<SearchHomeDto> homeSearch(
+    public CommonResponse<SearchResultResponse> homeSearch(
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng,
-            @RequestParam(defaultValue = "3.0") Double radiusKm,
             @RequestParam(defaultValue = "16") Integer limit
     ) {
         log.debug("홈화면 화장실 목록 조회");
 
-        SearchHomeDto result = searchService.searchNearby(lat, lng, radiusKm, limit);
+        SearchResultResponse response = searchService.searchNearby(lat, lng, limit);
 
         if(lat != null && lng != null) {
-            return CommonResponse.onSuccess(result, "근처 화장실 조회 성공");
+            return CommonResponse.onSuccess(response, "근처 화장실 조회 성공");
         }
-        return CommonResponse.onSuccess(result, "리뷰 높은 순서대로 조회 성공");
+        return CommonResponse.onSuccess(response, "리뷰 높은 순서대로 조회 성공");
     }
 
     @GetMapping("/emergency")
-    public CommonResponse<List<ToiletInfo>> emergencySearch(
+    public CommonResponse<SearchResultResponse> emergencySearch(
             @RequestParam Double lat,
             @RequestParam Double lng,
             @RequestParam(defaultValue = "3.0") Double radiusKm
     ) {
         log.debug("긴급 찾기 조회");
 
-        SearchHomeDto result = searchService.searchNearby(lat, lng, radiusKm, 5);
-        List<ToiletInfo> toilets = result.getToilets();
-        return CommonResponse.onSuccess(toilets, "긴급 화장실 조회 성공");
+        SearchResultResponse result = searchService.searchNearby(lat, lng, 5);
+        return CommonResponse.onSuccess(result, "긴급 화장실 조회 성공");
     }
 
 }

@@ -1,6 +1,5 @@
 package BuyThisDoHippo.Mapoop.domain.search.service;
 
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchHomeDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilter;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultResponse;
@@ -10,13 +9,10 @@ import BuyThisDoHippo.Mapoop.domain.tag.repository.TagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
-import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
-import BuyThisDoHippo.Mapoop.domain.toilet.repository.projection.ToiletWithDistance;
 import BuyThisDoHippo.Mapoop.global.common.TagConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -215,39 +211,58 @@ public class SearchService {
      * 1. 홈화면 노출을 위한 가까운 화장실 리스트
      * 2. 긴급찾기 5곳을 찾기 위해 호출 (limit = 5)
      */
-    public SearchHomeDto searchNearby(Double userLat, Double userLng, Double radiusKm, Integer limit) {
+    public SearchResultResponse searchNearby(Double lat, Double lng, Integer limit) {
 
-        // 1. null 아니면 가까운 순으로 sort 하고 return
-        if(userLat != null && userLng != null) {
-            List<ToiletWithDistance> nearbyToilets = toiletRepository.findNearbyToilets(userLat, userLng, radiusKm, limit);
-            List<ToiletInfo> nearbyToiletInfos = nearbyToilets.stream()
-                    .map(ToiletInfo::fromProjection)
-                    .toList();
-            tagService.addTagsToToiletInfo(nearbyToiletInfos);
+        LocalTime now = LocalTime.now(ZoneId.of("Asia/Seoul"));
 
-            long totalCount = nearbyToiletInfos.size();
-            return SearchHomeDto.builder()
-                    .totalCount(totalCount)
-                    .toilets(nearbyToiletInfos)
-                    .limit(limit)
-                    .radiusKm(radiusKm)
-                    .build();
-
+        List<Toilet> list = toiletRepository.findAll();
+        List<Toilet> sliced;
+        if (lat != null && lng != null) {
+            // 위치 제공 → 거리순
+            list.sort(Comparator.comparingInt(
+                    t -> distanceMeters(lat, lng, t.getLatitude(), t.getLongitude())
+            ));
+            sliced = list.stream().limit(limit).toList();
         } else {
-            // 2. null 이면 바로 rating 순으로 찾아서 return
-            Pageable pageable = PageRequest.of(0, limit);
-            List<Toilet> ratingToilets = toiletRepository.findAllByOrderByAvgRatingDesc(pageable);
-            List<ToiletInfo> ratingToiletInfos = ratingToilets.stream()
-                    .map(ToiletInfo::from)
-                    .toList();
-            long totalCount = ratingToiletInfos.size();
-            return SearchHomeDto.builder()
-                    .totalCount(totalCount)
-                    .toilets(ratingToiletInfos)
-                    .limit(limit)
-                    .radiusKm(radiusKm)
-                    .build();
+            // 위치 없음 → 평점순
+            list.sort(
+                    Comparator.<Toilet, Double>comparing(t -> Optional.ofNullable(t.getAvgRating()).orElse(0.0))
+                            .reversed()
+                            .thenComparing(Toilet::getName, Comparator.nullsLast(String::compareTo))
+            );
+            sliced = list.stream().limit(limit).toList();
         }
+
+        List<ToiletInfo> rows = sliced.stream().map(t -> {
+            boolean available = t.isOpenNow(now);
+
+            List<String> tagNames = t.getToiletTags().stream()
+                    .map(ToiletTag::getTag)
+                    .filter(Objects::nonNull)
+                    .map(Tag::getName)
+                    .distinct()
+                    .collect(Collectors.toCollection(ArrayList::new));
+            if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
+
+            return ToiletInfo.builder()
+                    .toiletId(t.getId())
+                    .name(t.getName())
+                    .latitude(t.getLatitude())
+                    .longitude(t.getLongitude())
+                    .address(t.getAddress())
+                    .rating(Optional.ofNullable(t.getAvgRating()).orElse(0.0))
+                    .distance((lat != null && lng != null)
+                            ? distanceMeters(lat, lng, t.getLatitude(), t.getLongitude())
+                            : null) // 위치 없을 땐 null
+                    .tags(tagNames)
+                    .isPartnership(Boolean.TRUE.equals(t.getIsPartnership()))
+                    .build();
+        }).toList();
+
+        return SearchResultResponse.builder()
+                .totalCount(rows.size())
+                .toilets(rows)
+                .build();
     }
 
 }
