@@ -20,6 +20,14 @@ public enum CustomErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 2001, "사용자를 찾을 수 없습니다."),
 
     // 3000: 화장실 에러
+    TOILET_NOT_FOUND(HttpStatus.NOT_FOUND, 3001, "화장실을 찾을 수 없습니다."),
+
+    // 3500: 리뷰 에러
+    REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, 3501, "리뷰를 찾을 수 없습니다."),
+    REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, 3502, "이미 해당 화장실에 리뷰를 작성했습니다."),
+
+    // 3600: 태그 에러
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 3601, "태그를 찾을 수 없습니다."),
 
     // 4000: Redis 에러
     REDIS_CONNECTION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, 4000, "Redis 연결에 실패했습니다."),

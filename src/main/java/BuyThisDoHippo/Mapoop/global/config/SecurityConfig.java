@@ -4,6 +4,7 @@ import BuyThisDoHippo.Mapoop.global.auth.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -50,6 +51,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/toilets/{id}").permitAll()
                         .requestMatchers("/api/toilets/emergency").permitAll()
                         .requestMatchers("/api/toilets/{id}/reviews").permitAll()
+                        .requestMatchers("/api/toilets/{id}/rating").permitAll()
+                        .requestMatchers("/api/toilets/{id}/review-count").permitAll()
+                        .requestMatchers("/api/toilets/{id}/top-tags").permitAll()
+                        .requestMatchers("/api/reviews/{id}").permitAll()
+                        .requestMatchers("/api/users/{id}/reviews").permitAll()
+                        .requestMatchers("/api/tags/review").permitAll()
                         .requestMatchers("/api/tags").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/api/search/**").permitAll()
@@ -58,8 +65,10 @@ public class SecurityConfig {
 
                         // 인증 필요한 API
                         .requestMatchers("/api/users/**").authenticated()
-                        .requestMatchers("/api/toilets").authenticated()  // POST는 인증 필요
-                        .requestMatchers("/api/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/toilets").authenticated()  // 화장실 등록은 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/toilets/*/reviews").authenticated()  // 리뷰 작성은 인증 필요
+                        .requestMatchers(HttpMethod.PUT, "/api/reviews/**").authenticated()   // 리뷰 수정은 인증 필요  
+                        .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").authenticated() // 리뷰 삭제는 인증 필요
 
                         // 나머지는 모두 인증 필요
                         .anyRequest().authenticated()

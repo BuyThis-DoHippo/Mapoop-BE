@@ -109,4 +109,12 @@ public class Toilet extends BaseEntity {
         }
     }
 
+    /**
+     * 평균 별점 업데이트
+     * 리뷰 작성/수정/삭제 시 호출
+     */
+    public void updateAverageRating(Double newAvgRating) {
+        this.avgRating = newAvgRating;
+    }
+
 }
