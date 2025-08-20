@@ -5,15 +5,13 @@ import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.user.entity.User;
 import BuyThisDoHippo.Mapoop.global.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Setter
 @Getter
 @Entity
 @Builder
@@ -23,8 +21,6 @@ import java.util.List;
         indexes = {
             @Index(name = "idx_toilet_location", columnList = "latitude, longitude"),
             @Index(name = "idx_toilet_type", columnList = "type"),
-            @Index(name = "idx_toilet_flags1", columnList = "open_24h, has_bidet, provides_sanitary_items"),
-            @Index(name = "idx_toilet_flags2", columnList = "gender_type, has_indoor_toilet, has_accessible_toilet, has_diaper_changing"),
             @Index(name = "idx_toilet_rating", columnList = "avg_rating")
         })
 public class Toilet extends BaseEntity {
@@ -43,6 +39,9 @@ public class Toilet extends BaseEntity {
     @Column(nullable = false)
     private Boolean isPartnership;
 
+    private String description; // 장소(가게) 설명
+    private String particulars; // 화장실 특이사항
+
     /** 위치 관련 */
     @Column(nullable = false)
     private Double latitude;    // 위도
@@ -55,7 +54,7 @@ public class Toilet extends BaseEntity {
 
     /** 평점 관련 */
     @Column(name = "avg_rating")
-    private Double avgRating;   // 1 ~ 5
+    private Double avgRating;
     private Integer totalReviews;
 
     /** 운영 정보 */
@@ -67,25 +66,25 @@ public class Toilet extends BaseEntity {
     private LocalTime closeTime;
 
     /** UNISEX or SEPARATE */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "gender_type", nullable = false)
-    private GenderType genderType;
-
-    /** 기본/특수 시설 플래그 */
-    @Column(name = "has_indoor_toilet", nullable = false)
-    private boolean hasIndoorToilet;
-
-    @Column(name = "has_bidet", nullable = false)
-    private boolean hasBidet;
-
-    @Column(name = "provides_sanitary_items", nullable = false)
-    private boolean providesSanitaryItems;
-
-    @Column(name = "has_diaper_table", nullable = false)
-    private boolean hasDiaperTable;
-
-    @Column(name = "has_accessible_toilet", nullable = false)
-    private boolean hasAccessibleToilet;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "gender_type", nullable = false)
+//    private GenderType genderType;
+//
+//    /** 기본/특수 시설 플래그 */
+//    @Column(name = "has_indoor_toilet", nullable = false)
+//    private boolean hasIndoorToilet;
+//
+//    @Column(name = "has_bidet", nullable = false)
+//    private boolean hasBidet;
+//
+//    @Column(name = "provides_sanitary_items", nullable = false)
+//    private boolean providesSanitaryItems;
+//
+//    @Column(name = "has_diaper_changing", nullable = false)
+//    private boolean hasDiaperTable;
+//
+//    @Column(name = "has_accessible_toilet", nullable = false)
+//    private boolean hasAccessibleToilet;
 
     /** 등록한 유저 (N:1) */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -95,7 +94,7 @@ public class Toilet extends BaseEntity {
     /** 태그 조회용 (1:N) */
     @OneToMany(mappedBy = "toilet", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<ToiletTag> tags = new ArrayList<>();
+    private List<ToiletTag> toiletTags = new ArrayList<>();
 
     public boolean isOpenNow(LocalTime now) {
         if (open24h) return true;
