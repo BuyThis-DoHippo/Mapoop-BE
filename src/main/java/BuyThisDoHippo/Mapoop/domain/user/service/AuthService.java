@@ -107,4 +107,79 @@ public class AuthService {
                 .accessToken(newAccessToken)
                 .build();
     }
+
+    public LoginResponse googleLogin(GoogleLoginRequest request) {
+        GoogleUserInfo googleUserInfo = getGoogleUserInfo(request.getGoogleAccessToken());
+
+        User user = findOrCreateUser(googleUserInfo, request);
+
+        String accessToken = jwtUtils.generateAccessToken(user.getId());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId());
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(UserResponse.from(user))
+                .build();
+    }
+
+    private GoogleUserInfo getGoogleUserInfo(String googleAccessToken) {
+        try {
+            log.info("구글 UserInfo API 호출 시작");
+
+            GoogleUserInfo result = webClient.get()
+                    .uri("https://www.googleapis.com/oauth2/v3/userinfo")
+                    .header("Authorization", "Bearer " + googleAccessToken)
+                    .retrieve()
+                    .bodyToMono(GoogleUserInfo.class)
+                    .block();
+
+            log.info("구글 UserInfo 응답: {}", result);
+            if (result == null || result.getSub() == null) {
+                throw new IllegalStateException("구글 사용자 정보 조회 실패: sub(googleId) 없음");
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("구글 API 호출 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("구글 사용자 정보 조회 실패: " + e.getMessage());
+        }
+    }
+
+    private User findOrCreateUser(GoogleUserInfo googleUserInfo, GoogleLoginRequest request) {
+
+        Optional<User> existing = userRepository.findByGoogleId(googleUserInfo.getSub());
+        if (existing.isPresent()) {
+            User user = existing.get();
+            if (request.getLocationConsent() != null) {
+                user.updateLocationConsent(request.getLocationConsent(), request.getLocationConsentVersion());
+            }
+            return user;
+        }
+
+        // 카카오로 가입된 동일 유저가 있다면 googleId만 추가로 매핑
+        if (googleUserInfo.getEmail() != null && !googleUserInfo.getEmail().isBlank()) {
+            Optional<User> byEmail = userRepository.findByEmail(googleUserInfo.getEmail());
+            if (byEmail.isPresent()) {
+                User user = byEmail.get();
+                user.linkGoogle(googleUserInfo.getSub());
+                if (request.getLocationConsent() != null) {
+                    user.updateLocationConsent(request.getLocationConsent(), request.getLocationConsentVersion());
+                }
+                return user;
+            }
+        }
+
+         // 없다면 신규 생성
+        User newUser = User.builder()
+                .name(googleUserInfo.getName())
+                .email(googleUserInfo.getEmail())
+                .googleId(googleUserInfo.getSub())
+                .isLocationConsent(Boolean.TRUE.equals(request.getLocationConsent()))
+                .locationConsentDate(Boolean.TRUE.equals(request.getLocationConsent()) ? LocalDateTime.now() : null)
+                .build();
+
+        return userRepository.save(newUser);
+
+    }
 }
