@@ -15,13 +15,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class S3Config {
 
 
-    @Value("${cloud.aws.credentials.access-key:}")
+    @Value("${cloud.aws.credentials.access-key}")
     private String accessKey;
 
-    @Value("${cloud.aws.credentials.secret-key:}")
+    @Value("${cloud.aws.credentials.secret-key}")
     private String secretKey;
 
-    @Value("ap-southeast-2")
+    @Value("${cloud.aws.region.static}")
     private String region;
 
     @Value("${aws.enabled:false}") boolean awsEnabled;
@@ -48,6 +48,7 @@ public class S3Config {
                     .region(Region.of(region))
                     .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
                     .build();
+
         } catch (Exception e) {
             log.error("S3Client 생성 중 오류 발생: {}", e.getMessage());
             // 빈 생성 실패를 방지하기 위해 기본 클라이언트 반환

@@ -1,43 +1,53 @@
+# application-release.yml
+
 spring:
+
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD}          # 운영 필수
+      timeout: 2s
 
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000                # 10m
+      max-lifetime: 1800000               # 30m
+      connection-timeout: 30000
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false                       # 운영 비활성화
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
 
-# JWT 설정
+# JWT
 jwt:
   secret: ${JWT_SECRET}
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
-# OpenAI API 설정
+# OpenAI
 openai:
   api:
     key: ${OPENAI_API_KEY}
     model: ${OPENAI_MODEL:gpt-3.5-turbo}
     url: https://api.openai.com/v1/chat/completions
 
-# Kakao API 설정
+# Kakao
 kakao:
   api:
     rest-key: ${KAKAO_REST_API_KEY}
@@ -48,7 +58,7 @@ app:
 
 # AWS 설정
 aws:
-  enabled: ${AWS_ENABLED:false}
+  enabled: ${AWS_ENABLED:true}
 
 cloud:
   aws:
@@ -63,15 +73,14 @@ cloud:
     stack:
       auto: false
 
-# 로깅 설정
+google:
+  maps:
+    api:
+      key: ${GOOGLE_MAPS_API_KEY}
+
 logging:
   level:
     root: INFO
     BuyThisDoHippo.Mapoop: DEBUG
     com.amazonaws: ${AWS_LOG_LEVEL:WARN}
-    org.springframework.security: DEBUG
-
-google:
-  maps:
-    api:
-      key: ${GOOGLE_MAPS_API_KEY}
+    org.springframework.security: INFO
