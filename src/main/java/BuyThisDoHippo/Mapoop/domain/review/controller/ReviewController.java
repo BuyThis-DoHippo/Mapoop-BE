@@ -6,12 +6,17 @@ package BuyThisDoHippo.Mapoop.domain.review.controller;
 
 import BuyThisDoHippo.Mapoop.domain.review.dto.*;
 import BuyThisDoHippo.Mapoop.domain.review.service.ReviewService;
+import BuyThisDoHippo.Mapoop.global.auth.JwtUtils;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
+import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
+import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -131,6 +136,26 @@ public class ReviewController {
             response,
             "리뷰 작성 성공"
         );
+    }
+
+    /**
+     * 이미지 포함 리뷰 작성
+     */
+    @PostMapping(value = "/toilets/{toiletId}/reviews/with-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommonResponse<ReviewResponse> createReviewWithImages(
+            @PathVariable Long toiletId,
+            @RequestPart("review") @Valid ReviewRequest request,  // JSON 데이터
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,  // 이미지 파일들
+            Principal principal
+    ) {
+        Long userId = getUserIdFromPrincipal(principal);
+        log.info("이미지 포함 리뷰 작성 API 호출 - 사용자 ID: {}, 화장실 ID: {}, 이미지 개수: {}",
+                userId, toiletId, images != null ? images.size() : 0);
+
+        ReviewResponse response = reviewService.createReviewWithImages(userId, toiletId, request, images);
+
+        return CommonResponse.onSuccess(response, "리뷰 작성 성공");
     }
 
     /**
@@ -273,6 +298,52 @@ public class ReviewController {
     }
 
     // ========================================
+    // 검색 필터링용 API (검색 도메인에서 사용)
+    // ========================================
+
+    /**
+     * 탑3 태그에 특정 태그가 포함된 화장실 ID 목록 조회
+     * 검색 도메인에서 상태 태그 필터링 시 사용
+     * 
+     * @param tagName 태그명 (예: "깨끗함", "향기좋음")
+     * @return 해당 태그가 탑3에 포함된 화장실 ID 목록
+     * 
+     * URL 예시: GET /api/toilets/by-top-tag?tagName=깨끗함
+     */
+    @GetMapping("/toilets/by-top-tag")
+    public CommonResponse<List<Long>> getToiletIdsByTopTag(@RequestParam String tagName) {
+        log.info("탑3 태그 기준 화장실 조회 API 호출 - 태그명: {}", tagName);
+        
+        List<Long> toiletIds = reviewService.getToiletIdsByTopTag(tagName);
+        
+        return CommonResponse.onSuccess(
+            toiletIds,
+            "탑3 태그 기준 화장실 조회 성공"
+        );
+    }
+
+    /**
+     * 여러 탑3 태그가 모두 포함된 화장실 ID 목록 조회
+     * 다중 상태 태그 필터링 시 사용
+     * 
+     * @param tagNames 태그명 목록 (예: ["깨끗함", "향기좋음"])
+     * @return 모든 태그가 탑3에 포함된 화장실 ID 목록
+     * 
+     * URL 예시: GET /api/toilets/by-top-tags?tagNames=깨끗함,향기좋음
+     */
+    @GetMapping("/toilets/by-top-tags")
+    public CommonResponse<List<Long>> getToiletIdsByTopTags(@RequestParam List<String> tagNames) {
+        log.info("다중 탑3 태그 기준 화장실 조회 API 호출 - 태그명들: {}", tagNames);
+        
+        List<Long> toiletIds = reviewService.getToiletIdsByTopTags(tagNames);
+        
+        return CommonResponse.onSuccess(
+            toiletIds,
+            "다중 탑3 태그 기준 화장실 조회 성공"
+        );
+    }
+
+    // ========================================
     // 헬퍼 메서드
     // ========================================
 
@@ -285,22 +356,28 @@ public class ReviewController {
      * @param principal 인증된 사용자 정보
      * @return 사용자 ID
      */
+    /**
+     * Principal에서 사용자 ID 추출
+     * 
+     * @param principal 인증된 사용자 정보
+     * @return 사용자 ID
+     * @throws ApplicationException 토큰이 없거나 유효하지 않은 경우
+     */
     private Long getUserIdFromPrincipal(Principal principal) {
-        // Principal이 null인 경우 (인증되지 않은 요청)
         if (principal == null) {
-            throw new IllegalArgumentException("인증이 필요합니다.");
+            log.warn("Principal이 null입니다. 인증되지 않은 요청");
+            throw new ApplicationException(CustomErrorCode.MISSING_TOKEN);
         }
-        
-        // 실제 구현에서는 JWT 토큰에서 사용자 ID 추출
-        // 예시: JwtUtils.getUserIdFromToken(principal.getName())
-        
-        // 임시로 principal.getName()을 Long으로 변환
-        // 실제로는 JwtAuthenticationFilter에서 설정한 값 사용
+
         try {
-            return Long.parseLong(principal.getName());
+            // JwtAuthenticationFilter에서 이미 userId를 설정했으므로 그대로 사용
+            Long userId = Long.parseLong(principal.getName());
+            log.debug("Principal에서 사용자 ID 추출 성공: {}", userId);
+            return userId;
         } catch (NumberFormatException e) {
-            log.error("Principal에서 사용자 ID 추출 실패: {}", principal.getName(), e);
-            throw new IllegalArgumentException("유효하지 않은 사용자 정보입니다.");
+            log.error("Principal에서 사용자 ID 추출 실패 - 잘못된 형식: {}", principal.getName(), e);
+            throw new ApplicationException(CustomErrorCode.INVALID_TOKEN);
         }
     }
+
 }

@@ -18,6 +18,13 @@ public enum CustomErrorCode {
 
     // 2000: 유저 에러
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 2001, "사용자를 찾을 수 없습니다."),
+    
+    // 2100: 인증/인가 에러
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 2101, "유효하지 않은 토큰입니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, 2102, "만료된 토큰입니다."),
+    MISSING_TOKEN(HttpStatus.UNAUTHORIZED, 2103, "토큰이 제공되지 않았습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, 2104, "유효하지 않은 Refresh 토큰입니다."),
+    TOKEN_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 2105, "토큰 생성에 실패했습니다."),
 
     // 3000: 화장실 에러
     TOILET_NOT_FOUND(HttpStatus.NOT_FOUND, 3001, "화장실을 찾을 수 없습니다."),
@@ -35,7 +42,12 @@ public enum CustomErrorCode {
 
     // 5000: 채팅 에러
     CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, 5001, "대화를 찾을 수 없습니다."),
-    CHAT_ACCESS_DENIED(HttpStatus.FORBIDDEN, 5002, "해당 대화에 접근할 권한이 없습니다.");
+    CHAT_ACCESS_DENIED(HttpStatus.FORBIDDEN, 5002, "해당 대화에 접근할 권한이 없습니다."),
+
+    // 6000: S3 에러
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 6001, "이미지 업로드에 실패했습니다."),
+    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 6002, "이미지 삭제에 실패했습니다."),
+    S3_STATUS_CHECK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 6003, "S3 상태 확인에 실패했습니다.");
 
     private final HttpStatus status;
     private final Integer code;

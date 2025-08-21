@@ -8,12 +8,14 @@ package BuyThisDoHippo.Mapoop.domain.review.dto;
 import BuyThisDoHippo.Mapoop.domain.review.entity.Review;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Builder // 빌더 패턴: 선택적 매개변수가 많을 때 가독성 좋은 객체 생성
+@Setter
 public class ReviewResponse {
     
     // === 리뷰 기본 정보 ===

@@ -7,6 +7,7 @@ import BuyThisDoHippo.Mapoop.global.auth.JwtUtils;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +40,7 @@ public class AuthController {
      * 테스트용 로그인 API
      * 실제 운영에서는 제거해야 함
      */
+    @Profile("dev")
     @PostMapping("/test/login")
     public ResponseEntity<CommonResponse<?>> testLogin(@RequestParam(defaultValue = "1") Long userId) {
         try {

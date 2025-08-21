@@ -10,6 +10,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -69,14 +73,17 @@ public class Review extends BaseEntity {
         return this.user.getId().equals(userId);
     }
 
+    /** 리뷰에 첨부된 이미지들 (1:N) */
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Image> images = new ArrayList<>();
+
     /**
      * 리뷰 이미지 URL 목록 조회
-     * 추후 Image 엔티티와 연관관계 설정 후 구현
-     * 현재는 임시로 빈 리스트 반환
      */
-    public java.util.List<String> getImageUrls() {
-        // TODO: Image 엔티티와 연관관계 설정 후 실제 이미지 URL 조회
-        return java.util.Collections.emptyList();
+    public List<String> getImageUrls() {
+        return images.stream()
+                .map(Image::getImageUrl)
+                .collect(Collectors.toList());
     }
 
 }
