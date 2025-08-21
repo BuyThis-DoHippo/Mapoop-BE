@@ -1,7 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.dto;
 
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
-import BuyThisDoHippo.Mapoop.domain.toilet.repository.projection.ToiletWithDistance;
 import lombok.*;
 
 import java.util.ArrayList;
