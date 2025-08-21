@@ -18,6 +18,7 @@ public class SearchFilter {
     private Double lng;   // 경도
     private Double minRating;
     private ToiletType type;
+    @Builder.Default
     private List<String> tags = List.of();
 
     private Boolean requireAvailable;  // true : 현재이용가능

@@ -21,8 +21,6 @@ import java.util.List;
         indexes = {
             @Index(name = "idx_toilet_location", columnList = "latitude, longitude"),
             @Index(name = "idx_toilet_type", columnList = "type"),
-            @Index(name = "idx_toilet_flags1", columnList = "open_24h, has_bidet, provides_sanitary_items"),
-            @Index(name = "idx_toilet_flags2", columnList = "gender_type, has_indoor_toilet, has_accessible_toilet, has_diaper_table"),
             @Index(name = "idx_toilet_rating", columnList = "avg_rating")
         })
 public class Toilet extends BaseEntity {

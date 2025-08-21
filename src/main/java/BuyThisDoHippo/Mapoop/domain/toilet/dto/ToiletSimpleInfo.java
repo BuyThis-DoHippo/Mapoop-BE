@@ -13,6 +13,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 /* 내가 등록한 화장실 응답을 위한 Dto */
 public class ToiletSimpleInfo {
+    private Long id;
     private String name;
     private String type;
     private String address;

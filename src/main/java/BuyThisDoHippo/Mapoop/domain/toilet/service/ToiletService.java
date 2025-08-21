@@ -181,6 +181,7 @@ public class ToiletService {
 
         return toilets.stream()
                 .map(toilet -> ToiletSimpleInfo.builder()
+                        .id(toilet.getId())
                         .name(toilet.getName())
                         .type(toilet.getType().name())
                         .address(toilet.getAddress())
