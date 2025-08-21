@@ -5,11 +5,16 @@ import BuyThisDoHippo.Mapoop.domain.user.dto.LoginRequest;
 import BuyThisDoHippo.Mapoop.domain.user.dto.LoginResponse;
 import BuyThisDoHippo.Mapoop.domain.user.dto.RefreshTokenRequest;
 import BuyThisDoHippo.Mapoop.domain.user.service.AuthService;
+import BuyThisDoHippo.Mapoop.global.auth.JwtUtils;
 import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtUtils jwtUtils;
 
     @PostMapping("/kakao/login")
     public ResponseEntity<CommonResponse<?>> kakaoLogin(@RequestBody LoginRequest request) {
@@ -28,6 +34,34 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                     CommonResponse.onFailure(null, CustomErrorCode.INVALID_REQUEST_DTO)
+            );
+        }
+    }
+
+    /**
+     * 테스트용 로그인 API
+     * 실제 운영에서는 제거해야 함
+     */
+    @Profile("dev")
+    @PostMapping("/test/login")
+    public ResponseEntity<CommonResponse<?>> testLogin(@RequestParam(defaultValue = "1") Long userId) {
+        try {
+            // 테스트용 JWT 토큰 생성
+            String accessToken = jwtUtils.generateAccessToken(userId);  // Long 직접 전달
+            String refreshToken = jwtUtils.generateRefreshToken(userId); // Long 직접 전달
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("accessToken", accessToken);
+            response.put("refreshToken", refreshToken);
+            response.put("userId", userId);
+            response.put("message", "테스트용 로그인 성공");
+            
+            return ResponseEntity.ok(
+                    CommonResponse.onSuccess(response, "테스트 로그인 성공")
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    CommonResponse.onFailure(null, CustomErrorCode.INTERNAL_SERVER_ERROR)
             );
         }
     }
