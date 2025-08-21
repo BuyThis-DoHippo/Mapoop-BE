@@ -21,7 +21,6 @@ public enum CustomErrorCode {
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, 2002, "인증이 필요합니다."),
   
     // 2100: 인증/인가 에러
-    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 2101, "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, 2102, "만료된 토큰입니다."),
     MISSING_TOKEN(HttpStatus.UNAUTHORIZED, 2103, "토큰이 제공되지 않았습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, 2104, "유효하지 않은 Refresh 토큰입니다."),
@@ -47,7 +46,7 @@ public enum CustomErrorCode {
     CHAT_ACCESS_DENIED(HttpStatus.FORBIDDEN, 5002, "해당 대화에 접근할 권한이 없습니다."),
 
     // 6000: 태그 에러
-    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 6000, "등록된 태그가 아닙니다.");
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 6000, "등록된 태그가 아닙니다."),
 
     // 7000: S3 에러
     IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7001, "이미지 업로드에 실패했습니다."),

@@ -4,10 +4,7 @@ import BuyThisDoHippo.Mapoop.domain.tag.entity.Tag;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.ToiletTagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
-import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletDetailResponse;
-import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterRequest;
-import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletRegisterResponse;
-import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletUpdateRequest;
+import BuyThisDoHippo.Mapoop.domain.toilet.dto.*;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
@@ -177,5 +174,20 @@ public class ToiletService {
 
         toiletRepository.save(toilet);
         log.info("화장실 정보 수정 완료 - toilet id: {}, updated by id: {}", toiletId, userId);
+    }
+
+    public List<ToiletSimpleInfo> getToiletsByUserId(Long userId) {
+        List<Toilet> toilets = toiletRepository.findByUserId(userId);
+
+        return toilets.stream()
+                .map(toilet -> ToiletSimpleInfo.builder()
+                        .id(toilet.getId())
+                        .name(toilet.getName())
+                        .type(toilet.getType().name())
+                        .address(toilet.getAddress())
+                        .floor(toilet.getFloor())
+                        .createdAt(toilet.getCreatedAt().toLocalDate())
+                        .build())
+                .toList();
     }
 }
