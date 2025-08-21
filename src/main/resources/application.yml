@@ -70,3 +70,8 @@ logging:
     BuyThisDoHippo.Mapoop: DEBUG
     com.amazonaws: ${AWS_LOG_LEVEL:WARN}
     org.springframework.security: DEBUG
+
+google:
+  maps:
+    api:
+      key: ${GOOGLE_MAPS_API_KEY}

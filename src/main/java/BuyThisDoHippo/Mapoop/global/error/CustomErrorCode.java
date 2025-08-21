@@ -16,9 +16,10 @@ public enum CustomErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 1004, "서버 내부 오류가 발생했습니다."),
     UNAUTHORIZED(HttpStatus.FORBIDDEN, 1005, "권한이 없습니다."),
 
-    // 2000: 유저 에러
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 2001, "사용자를 찾을 수 없습니다."),
-    
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 2000, "사용자를 찾을 수 없습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 2001, "유효하지 않은 토큰입니다."),
+    AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, 2002, "인증이 필요합니다."),
+  
     // 2100: 인증/인가 에러
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 2101, "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, 2102, "만료된 토큰입니다."),
@@ -27,14 +28,15 @@ public enum CustomErrorCode {
     TOKEN_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 2105, "토큰 생성에 실패했습니다."),
 
     // 3000: 화장실 에러
-    TOILET_NOT_FOUND(HttpStatus.NOT_FOUND, 3001, "화장실을 찾을 수 없습니다."),
-
+    TOILET_NOT_FOUND(HttpStatus.NOT_FOUND, 3000, "화장실을 찾을 수 없습니다."),
+    INVALID_TOILET_TYPE(HttpStatus.BAD_REQUEST, 3001, "유효하지 않은 화장실 타입입니다."),
+    INVALID_GENDER_TYPE(HttpStatus.BAD_REQUEST, 3002, "유효하지 않은 성별 타입입니다."),
+    GEOCODING_FAILED(HttpStatus.BAD_REQUEST, 3003, "주소를 좌표로 변환할 수 없습니다."),
+    TOILET_REGISTRATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 3004, "화장실 등록에 실패했습니다."),
+  
     // 3500: 리뷰 에러
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, 3501, "리뷰를 찾을 수 없습니다."),
     REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, 3502, "이미 해당 화장실에 리뷰를 작성했습니다."),
-
-    // 3600: 태그 에러
-    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 3601, "태그를 찾을 수 없습니다."),
 
     // 4000: Redis 에러
     REDIS_CONNECTION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, 4000, "Redis 연결에 실패했습니다."),
@@ -44,10 +46,13 @@ public enum CustomErrorCode {
     CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, 5001, "대화를 찾을 수 없습니다."),
     CHAT_ACCESS_DENIED(HttpStatus.FORBIDDEN, 5002, "해당 대화에 접근할 권한이 없습니다."),
 
-    // 6000: S3 에러
-    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 6001, "이미지 업로드에 실패했습니다."),
-    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 6002, "이미지 삭제에 실패했습니다."),
-    S3_STATUS_CHECK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 6003, "S3 상태 확인에 실패했습니다.");
+    // 6000: 태그 에러
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 6000, "등록된 태그가 아닙니다.");
+
+    // 7000: S3 에러
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7001, "이미지 업로드에 실패했습니다."),
+    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7002, "이미지 삭제에 실패했습니다."),
+    S3_STATUS_CHECK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7003, "S3 상태 확인에 실패했습니다.");
 
     private final HttpStatus status;
     private final Integer code;

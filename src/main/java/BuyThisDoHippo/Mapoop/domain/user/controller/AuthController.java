@@ -1,6 +1,8 @@
 package BuyThisDoHippo.Mapoop.domain.user.controller;
 
+import BuyThisDoHippo.Mapoop.domain.user.dto.GoogleLoginRequest;
 import BuyThisDoHippo.Mapoop.domain.user.dto.LoginRequest;
+import BuyThisDoHippo.Mapoop.domain.user.dto.LoginResponse;
 import BuyThisDoHippo.Mapoop.domain.user.dto.RefreshTokenRequest;
 import BuyThisDoHippo.Mapoop.domain.user.service.AuthService;
 import BuyThisDoHippo.Mapoop.global.auth.JwtUtils;
@@ -85,5 +87,15 @@ public class AuthController {
         return ResponseEntity.ok(
                 CommonResponse.onSuccess(null, "로그아웃되었습니다.")
         );
+    }
+
+    @PostMapping("/google/login")
+    public ResponseEntity<CommonResponse<?>> googleLogin(@RequestBody GoogleLoginRequest request) {
+        try {
+            LoginResponse loginResponse = authService.googleLogin(request);
+            return ResponseEntity.ok(CommonResponse.onSuccess(loginResponse, "구글 로그인 성공"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(CommonResponse.onFailure(null, CustomErrorCode.INVALID_REQUEST_DTO));
+        }
     }
 }

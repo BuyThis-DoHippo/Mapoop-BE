@@ -56,6 +56,9 @@ dependencies {
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+	// OpenAI GPT API
+	implementation 'com.openai:openai-java:3.0.2'
+	implementation 'com.openai:openai-java-client-okhttp:3.0.2' // OkHttp 기반 클라이언트
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -66,6 +69,8 @@ dependencies {
 				? 'osx-aarch_64' : 'osx-x86_64'
 		implementation "io.netty:netty-resolver-dns-native-macos:4.1.123.Final:${arch}"
 	}
+	// google geocoding api 사용
+	implementation group: 'com.google.maps', name: 'google-maps-services', version: '2.2.0'
 }
 
 

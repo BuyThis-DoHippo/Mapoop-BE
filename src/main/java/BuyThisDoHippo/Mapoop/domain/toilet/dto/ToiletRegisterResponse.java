@@ -1,17 +1,16 @@
-package BuyThisDoHippo.Mapoop.domain.map.dto;
+package BuyThisDoHippo.Mapoop.domain.toilet.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MapResultDto {
-    private Long totalCount;
-    private List<MarkerDto> markers;
+public class ToiletRegisterResponse {
+    private Long id;
+    private String name;
+    private String type;
 }

@@ -47,8 +47,7 @@ public class SecurityConfig {
 
                         // 공개 API (인증 불필요)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/toilets").permitAll()
-                        .requestMatchers("/api/toilets/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/toilets/*").permitAll()
                         .requestMatchers("/api/toilets/emergency").permitAll()
                         .requestMatchers("/api/toilets/{id}/reviews").permitAll()
                         .requestMatchers("/api/toilets/{id}/rating").permitAll()
@@ -69,6 +68,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/toilets/*/reviews").authenticated()  // 리뷰 작성은 인증 필요
                         .requestMatchers(HttpMethod.PUT, "/api/reviews/**").authenticated()   // 리뷰 수정은 인증 필요  
                         .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").authenticated() // 리뷰 삭제는 인증 필요
+                        .requestMatchers(HttpMethod.POST,"/api/toilets").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "api/toilets/*").authenticated()
+                        .requestMatchers("/api/reviews/**").authenticated()
 
                         // 나머지는 모두 인증 필요
                         .anyRequest().authenticated()
