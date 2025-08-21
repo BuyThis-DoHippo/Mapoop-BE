@@ -5,7 +5,7 @@ import BuyThisDoHippo.Mapoop.domain.chat_log.dto.ChatHistoryResponse;
 import BuyThisDoHippo.Mapoop.domain.chat_log.dto.ChatResponse;
 import BuyThisDoHippo.Mapoop.domain.chat_log.entity.ChatLog;
 import BuyThisDoHippo.Mapoop.domain.chat_log.repository.ChatLogRepository;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilterDto;
+import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilter;
 import BuyThisDoHippo.Mapoop.domain.search.service.SearchService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.user.entity.User;
@@ -55,15 +55,15 @@ public class ChatBotService {
         }
 
         // DB 검색 (키워드 X, 조건만)
-        SearchFilterDto filter = SearchFilterDto.builder()
+        SearchFilter filter = SearchFilter.builder()
                 .keyword(null)
+                .lat(req.getLat())
+                .lng(req.getLng())
                 .minRating(minRating)
-                .hasAccessibleToilet(accessibleOnly ? true : null)
-                .page(0)
-                .pageSize(50) // 넉넉히 받아와서 후처리 필터링
+                .requireAvailable(null)
                 .build();
 
-        var dbResult = searchService.search(filter, req.getLat(), req.getLng());
+        var dbResult = searchService.search(filter);
         var toilets  = dbResult.getToilets();
 
         // ① N분 이내 필터링(있다면) ② 도보시간 오름차순 정렬 ③ 최대 5개
