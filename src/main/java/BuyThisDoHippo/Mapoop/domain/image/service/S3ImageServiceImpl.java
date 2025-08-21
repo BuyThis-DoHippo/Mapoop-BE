@@ -22,8 +22,8 @@ public class S3ImageServiceImpl implements S3ImageService {
 
     private final S3Client s3;
 
-    @Value("${aws.s3.bucket}") private String bucket;
-    @Value("${aws.region}")    private String region;
+    @Value("${cloud.aws.s3.bucket}") private String bucket;
+    @Value("${cloud.aws.region.static}")    private String region;
     // CloudFront 쓰면 도메인으로 교체: https://dxxxxx.cloudfront.net/%s
     @Value("${aws.public-url-format:https://%s.s3.%s.amazonaws.com/%s}")
     private String publicUrlFormat;

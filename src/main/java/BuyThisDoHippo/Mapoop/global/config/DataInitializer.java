@@ -1,4 +1,4 @@
-package BuyThisDoHippo.Mapoop.config;
+package BuyThisDoHippo.Mapoop.global.config;
 
 import BuyThisDoHippo.Mapoop.domain.tag.entity.Tag;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.TagRepository;
@@ -32,9 +32,9 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("태그 데이터가 없습니다. 초기 태그 데이터를 생성합니다.");
                 
                 List<String> tagNames = Arrays.asList(
-                    "현재이용가능", "남녀분리", "가까이안화장실", "24시간",
-                    "비데있음", "위생용품제공", "깨끗함", "간판옴", 
-                    "장애인화장실", "기저귀교환대"
+                    "남녀 분리", "가게 안 화장실", "24시간",
+                    "비데 있음", "위생용품 제공", "깨끗함", "칸많음",
+                    "장애인화장실", "기저귀교환대", "휴지있음", "향기좋음"
                 );
 
                 for (String name : tagNames) {
