@@ -50,6 +50,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/api/toilets/*").permitAll()
                         .requestMatchers("/api/toilets/emergency").permitAll()
                         .requestMatchers("/api/toilets/{id}/reviews").permitAll()
+                        .requestMatchers("/api/toilets/{id}/rating").permitAll()
+                        .requestMatchers("/api/toilets/{id}/review-count").permitAll()
+                        .requestMatchers("/api/toilets/{id}/top-tags").permitAll()
+                        .requestMatchers("/api/reviews/{id}").permitAll()
+                        .requestMatchers("/api/users/{id}/reviews").permitAll()
+                        .requestMatchers("/api/tags/review").permitAll()
                         .requestMatchers("/api/tags").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/api/search/**").permitAll()
@@ -58,6 +64,10 @@ public class SecurityConfig {
 
                         // 인증 필요한 API
                         .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/toilets").authenticated()  // 화장실 등록은 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/toilets/*/reviews").authenticated()  // 리뷰 작성은 인증 필요
+                        .requestMatchers(HttpMethod.PUT, "/api/reviews/**").authenticated()   // 리뷰 수정은 인증 필요  
+                        .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").authenticated() // 리뷰 삭제는 인증 필요
                         .requestMatchers(HttpMethod.POST,"/api/toilets").authenticated()
                         .requestMatchers(HttpMethod.PUT, "api/toilets/*").authenticated()
                         .requestMatchers("/api/reviews/**").authenticated()

@@ -21,6 +21,8 @@ import java.util.List;
         indexes = {
             @Index(name = "idx_toilet_location", columnList = "latitude, longitude"),
             @Index(name = "idx_toilet_type", columnList = "type"),
+            @Index(name = "idx_toilet_flags1", columnList = "open_24h, has_bidet, provides_sanitary_items"),
+            @Index(name = "idx_toilet_flags2", columnList = "gender_type, has_indoor_toilet, has_accessible_toilet, has_diaper_table"),
             @Index(name = "idx_toilet_rating", columnList = "avg_rating")
         })
 public class Toilet extends BaseEntity {
@@ -106,6 +108,14 @@ public class Toilet extends BaseEntity {
             // 야간 영업
             return !now.isBefore(openTime) || now.isBefore(closeTime);
         }
+    }
+
+    /**
+     * 평균 별점 업데이트
+     * 리뷰 작성/수정/삭제 시 호출
+     */
+    public void updateAverageRating(Double newAvgRating) {
+        this.avgRating = newAvgRating;
     }
 
 }
