@@ -13,6 +13,9 @@ import java.util.List;
 
 @Repository
 public interface ToiletRepository extends JpaRepository<Toilet, Long> {
+
+    List<Toilet> findByUserId(Long userId);
+
     List<Toilet> findByNameContainingIgnoreCaseOrderByAvgRatingDesc(String keyword, Pageable pageable);
 
     @Query("""

@@ -65,27 +65,6 @@ public class Toilet extends BaseEntity {
     @Column(name = "close_time")
     private LocalTime closeTime;
 
-    /** UNISEX or SEPARATE */
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "gender_type", nullable = false)
-//    private GenderType genderType;
-//
-//    /** 기본/특수 시설 플래그 */
-//    @Column(name = "has_indoor_toilet", nullable = false)
-//    private boolean hasIndoorToilet;
-//
-//    @Column(name = "has_bidet", nullable = false)
-//    private boolean hasBidet;
-//
-//    @Column(name = "provides_sanitary_items", nullable = false)
-//    private boolean providesSanitaryItems;
-//
-//    @Column(name = "has_diaper_changing", nullable = false)
-//    private boolean hasDiaperTable;
-//
-//    @Column(name = "has_accessible_toilet", nullable = false)
-//    private boolean hasAccessibleToilet;
-
     /** 등록한 유저 (N:1) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

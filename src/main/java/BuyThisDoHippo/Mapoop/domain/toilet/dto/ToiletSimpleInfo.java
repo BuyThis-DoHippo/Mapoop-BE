@@ -16,6 +16,6 @@ public class ToiletSimpleInfo {
     private String name;
     private String type;
     private String address;
-    private String floor;
-    private LocalDate created_at;
+    private Integer floor;
+    private LocalDate createdAt;
 }
