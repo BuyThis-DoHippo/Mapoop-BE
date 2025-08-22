@@ -1,5 +1,7 @@
 package BuyThisDoHippo.Mapoop.domain.search.service;
 
+import BuyThisDoHippo.Mapoop.domain.image.entity.Image;
+import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilter;
 import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultResponse;
@@ -34,6 +36,7 @@ public class SearchService {
     private final ToiletRepository toiletRepository;
     private final TagRepository tagRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ImageRepository imageRepository;
 
     // Redis 캐시 키 접두사들
     private static final String AUTOCOMPLETE_PREFIX = "autocomplete:";
@@ -89,6 +92,11 @@ public class SearchService {
             if (available)
                 tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
+            String mainImageUrl = imageRepository
+                    .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
+                    .map(Image::getImageUrl)
+                    .orElse(null);
+
             return ToiletInfo.builder()
                     .toiletId(t.getId())
                     .name(t.getName())
@@ -102,6 +110,7 @@ public class SearchService {
                             : null)
                     .tags(tagNames)
                     .isPartnership(Boolean.TRUE.equals(t.getIsPartnership()))
+                    .mainImageUrl(mainImageUrl)
                     .build();
         }).toList();
 
@@ -243,6 +252,11 @@ public class SearchService {
                     .collect(Collectors.toCollection(ArrayList::new));
             if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
+            String mainImageUrl = imageRepository
+                    .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
+                    .map(Image::getImageUrl)
+                    .orElse(null);
+
             return ToiletInfo.builder()
                     .toiletId(t.getId())
                     .name(t.getName())
@@ -256,6 +270,7 @@ public class SearchService {
                             : null) // 위치 없을 땐 null
                     .tags(tagNames)
                     .isPartnership(Boolean.TRUE.equals(t.getIsPartnership()))
+                    .mainImageUrl(mainImageUrl)
                     .build();
         }).toList();
 
