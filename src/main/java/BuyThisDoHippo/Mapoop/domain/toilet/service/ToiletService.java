@@ -1,7 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.service;
 
-import BuyThisDoHippo.Mapoop.domain.tag.entity.Tag;
-import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
+import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.ToiletTagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.*;
@@ -21,8 +20,6 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -36,6 +33,7 @@ public class ToiletService {
     private final GeocodingService geocodingService;
     private final TagService tagService;
     private final ToiletTagRepository toiletTagRepository;
+    private final ImageRepository imageRepository;
 
     public ToiletRegisterResponse createToilet(ToiletRegisterRequest request, Long userId) {
         log.debug("화장실 등록 요청 - 등록자 id: {}", userId);
@@ -76,7 +74,6 @@ public class ToiletService {
                 .build();
 
         Toilet saved = toiletRepository.save(newToilet);
-        /// TODO: Image 함께 요청됐다면 연결
 
         // 함께 요청된 태그 연결
         tagService.attachByNames(saved, request.getTags());
@@ -90,15 +87,18 @@ public class ToiletService {
     }
 
     @Transactional(readOnly = true)
-    public ToiletDetailResponse getToiletDetail(Long toiletId, LocalTime now) {
+    public ToiletDetailResponse getToiletDetail(Long toiletId) {
         Toilet toilet = toiletRepository.findById(toiletId)
                 .orElseThrow(() -> new ApplicationException(CustomErrorCode.TOILET_NOT_FOUND));
 
         List<String> tagNames = toiletTagRepository.findTagNamesByToiletId(toiletId);
+
         if(toilet.isOpenNow(LocalTime.now(ZoneId.of("Asia/Seoul")))) {
             if(!tagNames.contains(TAG_AVAILABLE_NOW))
                 tagNames.add(TAG_AVAILABLE_NOW);
         }
+
+        List<String> imageUrls = imageRepository.findToiletImageUrls(toiletId);
 
         return ToiletDetailResponse.builder()
                 .id(toilet.getId())
@@ -124,7 +124,7 @@ public class ToiletService {
                 .isPartnership(Boolean.TRUE.equals(toilet.getIsPartnership()))
                 .description(toilet.getDescription())
                 .particulars(toilet.getParticulars())
-                .images(List.of())               // 이미지 나중 반영
+                .images(imageUrls)
                 .tags(tagNames)
                 .build();
     }

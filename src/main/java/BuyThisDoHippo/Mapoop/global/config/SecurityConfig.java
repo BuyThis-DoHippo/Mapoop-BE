@@ -66,11 +66,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/toilets").authenticated()  // 화장실 등록은 인증 필요
                         .requestMatchers(HttpMethod.POST, "/api/toilets/*/reviews").authenticated()  // 리뷰 작성은 인증 필요
-                        .requestMatchers(HttpMethod.PUT, "/api/reviews/**").authenticated()   // 리뷰 수정은 인증 필요  
+                        .requestMatchers(HttpMethod.PUT, "/api/reviews/**").authenticated()   // 리뷰 수정은 인증 필요
                         .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").authenticated() // 리뷰 삭제는 인증 필요
-                        .requestMatchers(HttpMethod.POST,"/api/toilets").authenticated()
                         .requestMatchers(HttpMethod.PUT, "api/toilets/*").authenticated()
                         .requestMatchers("/api/reviews/**").authenticated()
+                        .requestMatchers("/api/toilets/*/images").authenticated()
+                        .requestMatchers("/api/toilets/*/images/*").authenticated()
 
                         // 나머지는 모두 인증 필요
                         .anyRequest().authenticated()

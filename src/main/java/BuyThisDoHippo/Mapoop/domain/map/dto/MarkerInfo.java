@@ -26,4 +26,5 @@ public class MarkerInfo {
     private Boolean isOpen24h;
     private LocalTime openTime;
     private LocalTime closeTime;
+    private String mainImageUrl;
 }

@@ -1,5 +1,6 @@
 package BuyThisDoHippo.Mapoop.domain.image.service;
 
+import BuyThisDoHippo.Mapoop.domain.image.dto.ImageSavedDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,21 @@ public class NoopS3ImageService implements S3ImageService {
 
     @Override public void deleteImage(String imageUrl) { }
     @Override public void deleteReviewImages(List<String> imageUrls) { }
+
+    @Override
+    public List<String> uploadToiletImages(Long toiletId, List<MultipartFile> images) {
+        return List.of();
+    }
+
+    @Override
+    public List<ImageSavedDto> uploadToiletImagesWithMeta(Long toiletId, List<MultipartFile> images) {
+        return List.of();
+    }
+
+    @Override
+    public String toPublicUrl(String s3Key) {
+        return "";
+    }
 
     @Override
     public String extractS3KeyFromUrl(String imageUrl) {

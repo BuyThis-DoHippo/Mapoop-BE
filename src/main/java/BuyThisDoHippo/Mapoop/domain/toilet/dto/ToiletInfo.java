@@ -23,6 +23,7 @@ public class ToiletInfo {
     private Integer distance;    // m 단위
     private List<String> tags;
     private Boolean isPartnership;
+    private String mainImageUrl;
 
     public static ToiletInfo from(Toilet toilet) {
         // distance 빼고 반환
