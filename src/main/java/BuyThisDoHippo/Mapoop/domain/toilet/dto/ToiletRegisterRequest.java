@@ -45,8 +45,6 @@ public class ToiletRegisterRequest {
     private String particulars;
 
     @Builder.Default
-    private List<String> imageUrls = new ArrayList<>();
-    @Builder.Default
     private List<String> tags = new ArrayList<>();
     @Builder.Default
     private Boolean isPartnership = Boolean.FALSE;

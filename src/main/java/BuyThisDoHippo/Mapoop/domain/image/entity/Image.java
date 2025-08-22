@@ -25,14 +25,6 @@ public class Image extends BaseEntity {
     @Column(nullable = false, length = 500)
     private String imageUrl;
 
-    /** TOILET or REVIEW */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TargetType targetType;
-
-    @Column(nullable = false)
-    private Long targetId;
-
     // === S3 관련 추가 필드들 ===
 
     /** 원본 파일명 */
@@ -106,8 +98,6 @@ public class Image extends BaseEntity {
                 .s3Key(s3Key)
                 .width(width)
                 .height(height)
-                .targetType(TargetType.REVIEW)
-                .targetId(review.getId())
                 .review(review)
                 .build();
     }
@@ -132,8 +122,6 @@ public class Image extends BaseEntity {
                 .s3Key(s3Key)
                 .width(width)
                 .height(height)
-                .targetType(TargetType.TOILET)
-                .targetId(toilet.getId())
                 .toilet(toilet)
                 .build();
     }
@@ -158,17 +146,4 @@ public class Image extends BaseEntity {
         }
     }
 
-    /**
-     * 이미지가 리뷰용인지 확인
-     */
-    public boolean isReviewImage() {
-        return TargetType.REVIEW.equals(this.targetType);
-    }
-
-    /**
-     * 이미지가 화장실용인지 확인
-     */
-    public boolean isToiletImage() {
-        return TargetType.TOILET.equals(this.targetType);
-    }
 }

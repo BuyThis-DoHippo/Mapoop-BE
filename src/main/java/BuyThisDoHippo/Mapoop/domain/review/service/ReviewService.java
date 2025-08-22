@@ -2,11 +2,9 @@ package BuyThisDoHippo.Mapoop.domain.review.service;
 
 
 import BuyThisDoHippo.Mapoop.domain.image.entity.Image;
-import BuyThisDoHippo.Mapoop.domain.image.entity.ReviewImage;
 import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
 import BuyThisDoHippo.Mapoop.domain.image.repository.ReviewImageRepository;
 import BuyThisDoHippo.Mapoop.domain.image.service.S3ImageService;
-import BuyThisDoHippo.Mapoop.domain.image.service.S3ImageServiceImpl;
 import BuyThisDoHippo.Mapoop.domain.review.dto.ReviewListResponse;
 import BuyThisDoHippo.Mapoop.domain.review.dto.ReviewRequest;
 import BuyThisDoHippo.Mapoop.domain.review.dto.ReviewResponse;
@@ -337,7 +335,7 @@ public class ReviewService {
         List<TagResponse> tags = getTagsByReviewId(review.getId());
         
         // 이미지 URL 직접 조회 (Repository 사용)
-        List<String> imageUrls = imageRepository.findByReviewIdOrderByCreatedAtAsc(review.getId())
+        List<String> imageUrls = imageRepository.findByReview_IdOrderByCreatedAtAsc(review.getId())
                 .stream()
                 .map(Image::getImageUrl)
                 .collect(Collectors.toList());
@@ -347,7 +345,7 @@ public class ReviewService {
 
     private ReviewResponse convertToResponseWithTagsAndImages(Long reviewId) {
         Review r = reviewRepository.findById(reviewId).orElseThrow();
-        List<String> urls = imageRepository.findByReviewIdOrderByCreatedAtAsc(r.getId()) // r.getId() 사용
+        List<String> urls = imageRepository.findByReview_IdOrderByCreatedAtAsc(r.getId()) // r.getId() 사용
                 .stream()
                 .map(Image::getImageUrl) // Image 엔티티의 imageUrl 필드 사용
                 .collect(Collectors.toList());
