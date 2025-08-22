@@ -51,7 +51,8 @@ public enum CustomErrorCode {
     // 7000: S3 에러
     IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7001, "이미지 업로드에 실패했습니다."),
     IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7002, "이미지 삭제에 실패했습니다."),
-    S3_STATUS_CHECK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7003, "S3 상태 확인에 실패했습니다.");
+    S3_STATUS_CHECK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 7003, "S3 상태 확인에 실패했습니다."),
+    IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, 7004, "해당 이미지를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final Integer code;

@@ -100,4 +100,16 @@ public class ToiletController {
         return CommonResponse.onSuccess(response, "화장실 이미지 업로드 성공");
     }
 
+    @DeleteMapping("/{toiletId}/images/{imageId}")
+    public CommonResponse<Void> deleteImage(@PathVariable Long toiletId, @PathVariable Long imageId) {
+        imageCommandService.deleteImage(toiletId, imageId);
+        return CommonResponse.onSuccess(null, "이미지 삭제 성공");
+    }
+
+    @DeleteMapping("/{toiletId}/images")
+    public CommonResponse<Void> deleteAllImages(@PathVariable Long toiletId) {
+        imageCommandService.deleteAllImages(toiletId);
+        return CommonResponse.onSuccess(null, "전체 이미지 삭제 성공");
+    }
+
 }
