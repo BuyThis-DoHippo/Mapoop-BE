@@ -1,5 +1,7 @@
 package BuyThisDoHippo.Mapoop.domain.map.service;
 
+import BuyThisDoHippo.Mapoop.domain.image.entity.Image;
+import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
 import BuyThisDoHippo.Mapoop.domain.map.dto.MapResultResponse;
 import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerInfo;
 import BuyThisDoHippo.Mapoop.domain.map.dto.MarkerFilter;
@@ -24,9 +26,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class MapService {
 
-    private final TagService tagService;
     private final TagRepository tagRepository;
     private final ToiletRepository toiletRepository;
+    private final ImageRepository imageRepository;
 
     @Transactional(readOnly = true)
     public MapResultResponse getMarkers(MarkerFilter filter) {
@@ -72,6 +74,11 @@ public class MapService {
                     .collect(Collectors.toCollection(ArrayList::new));
             if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
+            String mainImageUrl = imageRepository
+                    .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
+                    .map(Image::getImageUrl)
+                    .orElse(null);  // 기본이미지 확정되면 추후 반영
+
             return MarkerInfo.builder()
                     .toiletId(t.getId())
                     .type(t.getType().name())
@@ -88,6 +95,7 @@ public class MapService {
                     .distance((filter.getLat() != null && filter.getLng() != null)
                             ? distanceMeters(filter.getLat(), filter.getLng(), t.getLatitude(), t.getLongitude())
                             : null)
+                    .mainImageUrl(mainImageUrl)
                     .build();
         }).toList();
 
