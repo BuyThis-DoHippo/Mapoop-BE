@@ -35,8 +35,9 @@ public class ToiletUpdateRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     private LocalTime closeTime;
 
-    @Builder.Default
-    private List<String> imageUrls = new ArrayList<>();
+    private String description;
+    private String particulars;
+
     @Builder.Default
     private List<String> tags = new ArrayList<>();
     @Builder.Default

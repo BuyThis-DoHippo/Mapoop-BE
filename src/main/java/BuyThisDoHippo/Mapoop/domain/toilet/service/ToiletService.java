@@ -172,6 +172,9 @@ public class ToiletService {
             tagService.syncTags(toilet, request.getTags());
         }
 
+        toilet.setParticulars(request.getParticulars());
+        toilet.setDescription(request.getDescription());
+
         toiletRepository.save(toilet);
         log.info("화장실 정보 수정 완료 - toilet id: {}, updated by id: {}", toiletId, userId);
     }
