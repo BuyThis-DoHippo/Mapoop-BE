@@ -185,6 +185,10 @@ public class ToiletService {
         toilet.setDescription(request.getDescription());
 
         toiletRepository.save(toilet);
+
+        if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+            imageCommandService.attachOnlyNew(toilet, request.getImageIds());
+        }
         log.info("화장실 정보 수정 완료 - toilet id: {}, updated by id: {}", toiletId, userId);
     }
 

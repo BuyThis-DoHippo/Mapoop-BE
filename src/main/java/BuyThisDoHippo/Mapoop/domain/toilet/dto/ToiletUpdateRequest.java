@@ -42,4 +42,6 @@ public class ToiletUpdateRequest {
     private List<String> tags = new ArrayList<>();
     @Builder.Default
     private Boolean isPartnership = Boolean.FALSE;
+    @Builder.Default
+    private List<Long> imageIds = new ArrayList<>();
 }
