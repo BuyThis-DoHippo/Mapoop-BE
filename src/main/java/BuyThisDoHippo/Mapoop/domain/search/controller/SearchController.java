@@ -104,14 +104,14 @@ public class SearchController {
     }
 
     @GetMapping("/emergency")
-    public CommonResponse<SearchResultResponse> emergencySearch(
+    public CommonResponse<EmergencyResultResponse> emergencySearch(
             @RequestParam Double lat,
             @RequestParam Double lng,
             @RequestParam(defaultValue = "3.0") Double radiusKm
     ) {
         log.debug("긴급 찾기 조회");
 
-        SearchResultResponse result = searchService.searchNearby(lat, lng, 5);
+        EmergencyResultResponse result = searchService.searchEmergency(lat, lng, 5);
         return CommonResponse.onSuccess(result, "긴급 화장실 조회 성공");
     }
 

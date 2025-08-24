@@ -2,9 +2,7 @@ package BuyThisDoHippo.Mapoop.domain.search.service;
 
 import BuyThisDoHippo.Mapoop.domain.image.entity.Image;
 import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchSuggestionDto;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchFilter;
-import BuyThisDoHippo.Mapoop.domain.search.dto.SearchResultResponse;
+import BuyThisDoHippo.Mapoop.domain.search.dto.*;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.Tag;
 import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.TagRepository;
@@ -275,6 +273,70 @@ public class SearchService {
         }).toList();
 
         return SearchResultResponse.builder()
+                .totalCount(rows.size())
+                .toilets(rows)
+                .build();
+    }
+
+    public EmergencyResultResponse searchEmergency(Double lat, Double lng, Integer limit) {
+
+        LocalTime now = LocalTime.now(ZoneId.of("Asia/Seoul"));
+
+        List<Toilet> list = toiletRepository.findAll();
+        List<Toilet> sliced;
+        if (lat != null && lng != null) {
+            // 위치 제공 → 거리순
+            list.sort(Comparator.comparingInt(
+                    t -> distanceMeters(lat, lng, t.getLatitude(), t.getLongitude())
+            ));
+            sliced = list.stream().limit(limit).toList();
+        } else {
+            // 위치 없음 → 평점순
+            list.sort(
+                    Comparator.<Toilet, Double>comparing(t -> Optional.ofNullable(t.getAvgRating()).orElse(0.0))
+                            .reversed()
+                            .thenComparing(Toilet::getName, Comparator.nullsLast(String::compareTo))
+            );
+            sliced = list.stream().limit(limit).toList();
+        }
+
+        List<EmergencyResponse> rows = sliced.stream().map(t -> {
+            boolean available = t.isOpenNow(now);
+
+            List<String> tagNames = t.getToiletTags().stream()
+                    .map(ToiletTag::getTag)
+                    .filter(Objects::nonNull)
+                    .map(Tag::getName)
+                    .distinct()
+                    .collect(Collectors.toCollection(ArrayList::new));
+            if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
+
+            String mainImageUrl = imageRepository
+                    .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
+                    .map(Image::getImageUrl)
+                    .orElse(null);
+
+            return EmergencyResponse.builder()
+                    .toiletId(t.getId())
+                    .name(t.getName())
+                    .type(t.getType().name())
+                    .latitude(t.getLatitude())
+                    .longitude(t.getLongitude())
+                    .address(t.getAddress())
+                    .rating(Optional.ofNullable(t.getAvgRating()).orElse(0.0))
+                    .distance((lat != null && lng != null)
+                            ? distanceMeters(lat, lng, t.getLatitude(), t.getLongitude())
+                            : null) // 위치 없을 땐 null
+                    .tags(tagNames)
+                    .isOpenNow(available)
+                    .openTime(t.getOpenTime())
+                    .closeTime(t.getCloseTime())
+                    .isOpen24h(t.getOpen24h())
+                    .mainImageUrl(mainImageUrl)
+                    .build();
+        }).toList();
+
+        return EmergencyResultResponse.builder()
                 .totalCount(rows.size())
                 .toilets(rows)
                 .build();
