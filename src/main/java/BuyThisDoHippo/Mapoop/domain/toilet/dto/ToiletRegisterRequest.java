@@ -48,4 +48,6 @@ public class ToiletRegisterRequest {
     private List<String> tags = new ArrayList<>();
     @Builder.Default
     private Boolean isPartnership = Boolean.FALSE;
+    @Builder.Default
+    private List<Long> imageIds = new ArrayList<>();
 }

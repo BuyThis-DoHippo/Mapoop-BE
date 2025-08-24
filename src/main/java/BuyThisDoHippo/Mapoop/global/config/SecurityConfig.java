@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/search/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api/map/markers").permitAll()
+                        .requestMatchers("/api/toilets/images/**").permitAll()
 
                         // 인증 필요한 API
                         .requestMatchers("/api/users/**").authenticated()

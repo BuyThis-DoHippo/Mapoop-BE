@@ -100,9 +100,9 @@ public class ToiletController {
         return CommonResponse.onSuccess(response, "화장실 이미지 업로드 성공");
     }
 
-    @DeleteMapping("/{toiletId}/images/{imageId}")
-    public CommonResponse<Void> deleteImage(@PathVariable Long toiletId, @PathVariable Long imageId) {
-        imageCommandService.deleteImage(toiletId, imageId);
+    @DeleteMapping("/images/{imageId}")
+    public CommonResponse<Void> deleteImage(@PathVariable Long imageId) {
+        imageCommandService.deleteImage(imageId);
         return CommonResponse.onSuccess(null, "이미지 삭제 성공");
     }
 
@@ -110,6 +110,30 @@ public class ToiletController {
     public CommonResponse<Void> deleteAllImages(@PathVariable Long toiletId) {
         imageCommandService.deleteAllImages(toiletId);
         return CommonResponse.onSuccess(null, "전체 이미지 삭제 성공");
+    }
+
+    @PostMapping(value = "images/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CommonResponse<UploadImageResponse> uploadImages(@RequestPart("files") List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return CommonResponse.onSuccess(null, "업로드할 파일이 없습니다.");
+        }
+
+        // S3 업로드
+        final List<ImageSavedDto> savedToS3 = s3ImageService.uploadToiletImages(files);
+
+        // DB 저장
+        final List<ImageInfo> items = new ArrayList<>(savedToS3.size());
+        for (int i = 0; i < savedToS3.size(); i++) {
+            ImageSavedDto s3 = savedToS3.get(i);
+
+            Long imageId = imageCommandService.saveToiletImage(s3.getUrl(), s3.getS3Key(), s3.getOriginalName(), s3.getSize(), s3.getContentType());
+
+            items.add(new ImageInfo(imageId, s3.getUrl()));
+        }
+
+        UploadImageResponse response = new UploadImageResponse(items.size(), items);
+
+        return CommonResponse.onSuccess(response, "화장실 이미지 업로드 성공");
     }
 
 }

@@ -192,6 +192,43 @@ public class S3ImageServiceImpl implements S3ImageService {
         return key;
     }
 
+    @Override
+    public List<ImageSavedDto> uploadToiletImages(List<MultipartFile> images) {
+        List<ImageSavedDto> result = new ArrayList<>();
+        for (MultipartFile f : images) {
+            String originalName = (f.getOriginalFilename() == null) ? "unknown" : f.getOriginalFilename();
+            String extWithDot = getExt(originalName);          // ".jpg"
+            String pureExt = extWithDot.substring(1).toLowerCase(); // "jpg"
+            if (!ALLOWED_EXTS.contains(pureExt)) {
+                throw new IllegalArgumentException("허용되지 않은 확장자: " + pureExt);
+            }
+            if (f.getSize() <= 0 || f.getSize() > MAX_SIZE_BYTES) {
+                throw new IllegalArgumentException("파일 크기 초과(최대 " + (MAX_SIZE_BYTES / (1024 * 1024)) + "MB)");
+            }
+
+            String key = "toilets/" + UUID.randomUUID() + extWithDot;
+
+            PutObjectRequest req = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType(f.getContentType())
+//                    .acl(ObjectCannedACL.PUBLIC_READ)
+                    .contentDisposition("inline")
+                    .build();
+
+            try {
+                s3.putObject(req, RequestBody.fromBytes(f.getBytes()));
+            } catch (Exception e) {
+                log.error("S3 업로드 실패 key={}", key, e);
+                throw new RuntimeException("S3 업로드 실패: " + key, e);
+            }
+
+            String url = String.format(publicUrlFormat, bucket, region, key);
+            result.add(new ImageSavedDto(url, key, originalName, f.getSize(), f.getContentType()));
+        }
+        return result;
+    }
+
     private String getExt(String name) {
         if (name == null) return ".jpg";
         int i = name.lastIndexOf('.');
