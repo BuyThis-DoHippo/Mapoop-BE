@@ -297,6 +297,26 @@ public class ReviewController {
         );
     }
 
+    /**
+     * 특정 화장실의 평점 분포 조회
+     * 
+     * @param toiletId 화장실 ID
+     * @return 평점별 개수와 비율 분포
+     * 
+     * URL 예시: GET /api/toilets/1/rating-distribution
+     */
+    @GetMapping("/toilets/{toiletId}/rating-distribution")
+    public CommonResponse<Object> getRatingDistribution(@PathVariable Long toiletId) {
+        log.info("화장실 평점 분포 조회 API 호출 - 화장실 ID: {}", toiletId);
+        
+        Object distribution = reviewService.getRatingDistribution(toiletId);
+        
+        return CommonResponse.onSuccess(
+            distribution,
+            "평점 분포 조회 성공"
+        );
+    }
+
     // ========================================
     // 검색 필터링용 API (검색 도메인에서 사용)
     // ========================================

@@ -47,14 +47,15 @@ public class SecurityConfig {
 
                         // 공개 API (인증 불필요)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/toilets/*").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/toilets/**").permitAll()  // 모든 화장실 관련 GET 요청
                         .requestMatchers("/api/toilets/emergency").permitAll()
-                        .requestMatchers("/api/toilets/{id}/reviews").permitAll()
-                        .requestMatchers("/api/toilets/{id}/rating").permitAll()
-                        .requestMatchers("/api/toilets/{id}/review-count").permitAll()
-                        .requestMatchers("/api/toilets/{id}/top-tags").permitAll()
-                        .requestMatchers("/api/reviews/{id}").permitAll()
-                        .requestMatchers("/api/users/{id}/reviews").permitAll()
+                        .requestMatchers("/api/toilets/*/reviews").permitAll()
+                        .requestMatchers("/api/toilets/*/rating").permitAll()
+                        .requestMatchers("/api/toilets/*/review-count").permitAll()
+                        .requestMatchers("/api/toilets/*/rating-distribution").permitAll()  // 수정
+                        .requestMatchers("/api/toilets/*/top-tags").permitAll()
+                        .requestMatchers("/api/reviews/*").permitAll()
+                        .requestMatchers("/api/users/*/reviews").permitAll()
                         .requestMatchers("/api/tags/review").permitAll()
                         .requestMatchers("/api/tags").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()

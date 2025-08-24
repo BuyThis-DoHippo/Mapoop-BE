@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -308,6 +309,55 @@ public class ReviewService {
      */
     public Long getReviewCount(Long toiletId) {
         return reviewRepository.countByToiletIdAndType(toiletId, ReviewType.ACTIVE);
+    }
+
+    /**
+     * 특정 화장실의 평점 분포 조회
+     */
+    public Object getRatingDistribution(Long toiletId) {
+        log.info("화장실 평점 분포 조회 - 화장실 ID: {}", toiletId);
+        
+        // 전체 리뷰 개수
+        Long totalReviews = getReviewCount(toiletId);
+        
+        // 각 별점별 개수 조회 (1점~5점)
+        List<Object[]> ratingCounts = reviewRepository.countByRatingGroupByToiletId(toiletId);
+        
+        // 분포 데이터 생성
+        List<Object> distribution = new ArrayList<>();
+        
+        for (int rating = 5; rating >= 1; rating--) {
+            Long count = 0L;
+            
+            // 해당 별점의 개수 찾기
+            for (Object[] result : ratingCounts) {
+                Integer dbRating = (Integer) result[0];
+                Long dbCount = (Long) result[1];
+                
+                if (dbRating.equals(rating)) {
+                    count = dbCount;
+                    break;
+                }
+            }
+            
+            // 퍼센테이지 계산
+            double percentage = totalReviews > 0 ? Math.round((count * 100.0 / totalReviews) * 10) / 10.0 : 0.0;
+            
+            // 분포 객체 생성
+            Object ratingData = Map.of(
+                "rating", rating,
+                "count", count,
+                "percentage", percentage
+            );
+            
+            distribution.add(ratingData);
+        }
+        
+        // 최종 응답 객체
+        return Map.of(
+            "totalReviews", totalReviews,
+            "distribution", distribution
+        );
     }
 
     /**
