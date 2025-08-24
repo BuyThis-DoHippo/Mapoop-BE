@@ -10,6 +10,8 @@ import BuyThisDoHippo.Mapoop.domain.tag.entity.ToiletTag;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.TagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletImage;
+import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletImageRepository;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
 import BuyThisDoHippo.Mapoop.global.common.TagConstants;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +30,7 @@ public class MapService {
 
     private final TagRepository tagRepository;
     private final ToiletRepository toiletRepository;
-    private final ImageRepository imageRepository;
+    private final ToiletImageRepository toiletImageRepository;
 
     @Transactional(readOnly = true)
     public MapResultResponse getMarkers(MarkerFilter filter) {
@@ -74,10 +76,10 @@ public class MapService {
                     .collect(Collectors.toCollection(ArrayList::new));
             if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
-            String mainImageUrl = imageRepository
+            String mainImageUrl = toiletImageRepository
                     .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
-                    .map(Image::getImageUrl)
-                    .orElse(null);  // 기본이미지 확정되면 추후 반영
+                    .map(ti->ti.getImage().getImageUrl())
+                    .orElse(null);
 
             return MarkerInfo.builder()
                     .toiletId(t.getId())
