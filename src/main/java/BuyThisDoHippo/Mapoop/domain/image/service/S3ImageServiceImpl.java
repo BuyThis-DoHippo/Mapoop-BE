@@ -189,6 +189,10 @@ public class S3ImageServiceImpl implements S3ImageService {
         if (key.startsWith(bucket + "/")) {
             key = key.substring(bucket.length() + 1);
         }
+
+        // ⭐⭐⭐ 이 로그가 핵심!!! ⭐⭐⭐
+        log.info("extractS3KeyFromUrl: Original URL = [{}], Extracted Key = [{}]", imageUrl, key);
+        // ⭐⭐⭐ 그리고 여기서 추출된 'key' 값을 네 S3 콘솔에서 직접 찾아봐! ⭐⭐⭐
         return key;
     }
 
