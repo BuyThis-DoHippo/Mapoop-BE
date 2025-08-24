@@ -1,11 +1,14 @@
 package BuyThisDoHippo.Mapoop.domain.toilet.service;
 
 import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
+import BuyThisDoHippo.Mapoop.domain.image.service.ImageCommandService;
 import BuyThisDoHippo.Mapoop.domain.tag.repository.ToiletTagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.*;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
+import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletImage;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.ToiletType;
+import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletImageRepository;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
 import BuyThisDoHippo.Mapoop.domain.user.entity.User;
 import BuyThisDoHippo.Mapoop.domain.user.repository.UserRepository;
@@ -33,7 +36,8 @@ public class ToiletService {
     private final GeocodingService geocodingService;
     private final TagService tagService;
     private final ToiletTagRepository toiletTagRepository;
-    private final ImageRepository imageRepository;
+    private final ToiletImageRepository toiletImageRepository;
+    private final ImageCommandService imageCommandService;
 
     public ToiletRegisterResponse createToilet(ToiletRegisterRequest request, Long userId) {
         log.debug("화장실 등록 요청 - 등록자 id: {}", userId);
@@ -78,6 +82,9 @@ public class ToiletService {
         // 함께 요청된 태그 연결
         tagService.attachByNames(saved, request.getTags());
 
+        // 함께 요청된 이미지 아이디들 연결
+        imageCommandService.attachByIds(saved, request.getImageIds());
+
         log.debug("화장실 등록 완료 - id: {}, name: {}", newToilet.getId(), newToilet.getName());
         return ToiletRegisterResponse.builder()
                 .id(newToilet.getId())
@@ -98,7 +105,9 @@ public class ToiletService {
                 tagNames.add(TAG_AVAILABLE_NOW);
         }
 
-        List<String> imageUrls = imageRepository.findToiletImageUrls(toiletId);
+        List<String> imageUrls = toiletImageRepository.findByToiletId(toiletId).stream()
+                .map(ti-> ti.getImage().getImageUrl())
+                .toList();
 
         return ToiletDetailResponse.builder()
                 .id(toilet.getId())

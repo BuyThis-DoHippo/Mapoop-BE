@@ -18,4 +18,5 @@ public interface S3ImageService {
     /** s3 Key <-> 퍼블릭 URL */
     String toPublicUrl(String s3Key);
     String extractS3KeyFromUrl(String imageUrl);
+    List<ImageSavedDto>  uploadToiletImages(List<MultipartFile> images);
 }

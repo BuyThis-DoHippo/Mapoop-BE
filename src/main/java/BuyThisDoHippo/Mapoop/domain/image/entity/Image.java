@@ -126,6 +126,25 @@ public class Image extends BaseEntity {
                 .build();
     }
 
+    public static Image createToiletImageWithoutToilet(
+            String imageUrl,
+            String originalName,
+            Long fileSize,
+            String mimeType,
+            String s3Key,
+            Integer width,
+            Integer height) {
+        return Image.builder()
+                .imageUrl(imageUrl)
+                .originalName(originalName)
+                .fileSize(fileSize)
+                .mimeType(mimeType)
+                .s3Key(s3Key)
+                .width(width)
+                .height(height)
+                .build();
+    }
+
     /**
      * S3 URL에서 S3 키 추출
      */

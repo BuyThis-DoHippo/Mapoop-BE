@@ -49,4 +49,9 @@ public class NoopS3ImageService implements S3ImageService {
             return imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
         return "default-key";
     }
+
+    @Override
+    public List<ImageSavedDto> uploadToiletImages(List<MultipartFile> images) {
+        return List.of();
+    }
 }
