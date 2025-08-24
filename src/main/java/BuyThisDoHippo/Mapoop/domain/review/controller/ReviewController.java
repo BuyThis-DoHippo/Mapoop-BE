@@ -4,6 +4,7 @@
  */
 package BuyThisDoHippo.Mapoop.domain.review.controller;
 
+import BuyThisDoHippo.Mapoop.domain.image.service.ReviewImageService;
 import BuyThisDoHippo.Mapoop.domain.review.dto.*;
 import BuyThisDoHippo.Mapoop.domain.review.service.ReviewService;
 import BuyThisDoHippo.Mapoop.global.auth.JwtUtils;
@@ -28,6 +29,7 @@ import java.util.List;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final ReviewImageService reviewImageService;
 
     // ========================================
     // 리뷰 조회 API
@@ -156,6 +158,24 @@ public class ReviewController {
         ReviewResponse response = reviewService.createReviewWithImages(userId, toiletId, request, images);
 
         return CommonResponse.onSuccess(response, "리뷰 작성 성공");
+    }
+
+    @PostMapping(value = "/toilets/{toiletId}/reviews/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommonResponse<List<String>> uploadReviewImages(
+            @PathVariable Long toiletId, // 화장실 ID 받음!
+            @RequestPart("images") List<MultipartFile> images, // 이미지 파일들
+            Principal principal // 누가 올렸는지 알기 위해 필요함
+    ) {
+        Long userId = getUserIdFromPrincipal(principal);
+        log.info("리뷰 이미지 개별 업로드 API 호출 - 사용자 ID: {}, 화장실 ID: {}, 이미지 개수: {}",
+                userId, toiletId, images != null ? images.size() : 0);
+
+        // TODO: 여기서는 파일들을 저장하고 저장된 URL 리스트를 반환한다고 가정
+        // reviewImageService 에 toiletId까지 넘겨줘서 필요하다면 활용하게 할 수 있어.
+        List<String> imageUrls = reviewImageService.uploadReviewImages(userId, toiletId, images);
+
+        return CommonResponse.onSuccess(imageUrls, "리뷰 이미지 업로드 성공");
     }
 
     /**
