@@ -95,4 +95,22 @@ public class Toilet extends BaseEntity {
         this.avgRating = newAvgRating;
     }
 
+    /** 리뷰 수 +1 */
+    public void increaseTotalReviews() {
+        if (this.totalReviews == null) this.totalReviews = 0;
+        this.totalReviews += 1;
+    }
+
+    /** 리뷰 수 -1 (바닥 0) */
+    public void decreaseTotalReviews() {
+        if (this.totalReviews == null) this.totalReviews = 0;
+        if (this.totalReviews > 0) this.totalReviews -= 1;
+    }
+
+    /** 신규 행 기본값 보호 */
+    @PrePersist
+    public void prePersist() {
+        if (this.totalReviews == null) this.totalReviews = 0;
+        if (this.avgRating == null) this.avgRating = 0.0;
+    }
 }
