@@ -28,8 +28,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     @Query("""
         SELECT t FROM Tag t 
         WHERE t.name IN (
-            '현재이용가능', '남녀분리', '가까이안화장실', '24시간', 
-            '비데있음', '위생용품제공', '깨끗함', '간판옴', 
+            '현재이용가능', '남녀분리', '가게 안 화장실', '24시간', '비데있음', '위생용품제공', 
+            '깨끗함', '칸많음', '휴지있음', '향기좋음',
             '장애인화장실', '기저귀교환대'
         )
         ORDER BY t.name

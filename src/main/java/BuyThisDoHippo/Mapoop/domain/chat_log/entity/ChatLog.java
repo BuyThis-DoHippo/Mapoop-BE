@@ -19,7 +19,7 @@ public class ChatLog extends BaseEntity {
     @Column(nullable = false)
     private String question;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
 
     /** 질문한 사용자 (N:1) */
