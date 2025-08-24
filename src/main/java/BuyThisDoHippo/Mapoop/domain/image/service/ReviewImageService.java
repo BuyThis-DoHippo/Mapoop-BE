@@ -1,7 +1,11 @@
 // ReviewImageService.java (이전에 보여줬던 코드 그대로)
 package BuyThisDoHippo.Mapoop.domain.image.service; // 너의 서비스 패키지 경로에 맞게 수정해
 
+import BuyThisDoHippo.Mapoop.domain.image.entity.ReviewImage;
+import BuyThisDoHippo.Mapoop.domain.image.repository.ReviewImageRepository;
 import BuyThisDoHippo.Mapoop.domain.image.service.S3ImageService; // 너의 S3Uploader 패키지 경로에 맞게 수정해
+import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
+import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +22,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReviewImageService {
 
-    private final S3ImageService s3ImageService;// S3에 파일 올리는 역할만 함
+    private final S3ImageService s3ImageService; // S3에 파일 올리는 역할만 함
+    private final ReviewImageRepository reviewImageRepository;
 
     // ⭐⭐ 리뷰 이미지 개별 업로드 메소드 (컨트롤러와 연결될 것) ⭐⭐
     @Transactional // S3 업로드 자체는 트랜잭션 필요 없지만, 비즈니스 로직을 포함할 수 있으니 붙여둠.
@@ -44,13 +49,16 @@ public class ReviewImageService {
         return imageUrls;
     }
 
-    // ⭐⭐ 리뷰 삭제 시 S3 이미지도 함께 삭제해야 한다면 이 메소드 추가 ⭐⭐
-    // reviewImages 필드의 orphanRemoval = true로 DB에서는 알아서 삭제되겠지만, S3에 남은 파일은 이 메소드로 삭제.
-    public void deleteS3ReviewImages(List<String> imageUrls) {
+    public void deleteS3Images(Long userId, List<String> imageUrls) { // userId는 로그용 or 추가 권한 체크용
         if (imageUrls == null || imageUrls.isEmpty()) {
+            log.warn("삭제할 S3 이미지 URL이 없습니다. 사용자 ID: {}", userId);
             return;
         }
-        s3ImageService.deleteReviewImages(imageUrls); // ⭐⭐⭐ S3ImageService의 deleteReviewImages 호출 ⭐⭐⭐
-        log.info("S3 리뷰 이미지 {}개 삭제 요청 완료", imageUrls.size());
+
+        // ⭐ S3ImageService의 deleteReviewImages를 호출 ⭐
+        // S3ImageService는 이 URL들로부터 S3 키를 추출해서 실제 S3에서 파일들을 지우는 로직을 가지고 있어야 해.
+        s3ImageService.deleteReviewImages(imageUrls);
+
+        log.info("사용자 {}의 임시 S3 이미지 {}개 삭제 완료: {}", userId, imageUrls.size(), imageUrls);
     }
 }

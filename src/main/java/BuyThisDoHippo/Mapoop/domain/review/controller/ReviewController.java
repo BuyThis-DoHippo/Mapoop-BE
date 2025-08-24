@@ -4,6 +4,7 @@
  */
 package BuyThisDoHippo.Mapoop.domain.review.controller;
 
+import BuyThisDoHippo.Mapoop.domain.image.dto.ImageDeleteRequest;
 import BuyThisDoHippo.Mapoop.domain.image.service.ReviewImageService;
 import BuyThisDoHippo.Mapoop.domain.review.dto.*;
 import BuyThisDoHippo.Mapoop.domain.review.service.ReviewService;
@@ -176,6 +177,22 @@ public class ReviewController {
         List<String> imageUrls = reviewImageService.uploadReviewImages(userId, toiletId, images);
 
         return CommonResponse.onSuccess(imageUrls, "리뷰 이미지 업로드 성공");
+    }
+
+    @DeleteMapping("/reviews/images/s3-urls") // URL은 이미지들의 '집합'을 나타내기 위해 복수형
+    @ResponseStatus(HttpStatus.NO_CONTENT) // 204 No Content가 일반적으로 DELETE 성공 응답
+    public CommonResponse<Void> deleteTemporaryS3Images(
+            @RequestBody ImageDeleteRequest request, // 바디로 이미지 URL 리스트를 받음
+            Principal principal // 누가 삭제 요청하는지 (보안용, 필요 없으면 생략 가능)
+    ) {
+        Long userId = getUserIdFromPrincipal(principal); // ⭐ 사용자 ID 추출 ⭐
+        log.info("임시 S3 이미지 삭제 API 호출 - 사용자 ID: {}, 삭제 요청 URL 개수: {}",
+                userId, request.getImageUrls() != null ? request.getImageUrls().size() : 0);
+
+        // 서비스 호출: S3에서만 이미지 삭제. DB에는 아직 저장되지 않은 이미지이므로 DB 작업 없음.
+        reviewImageService.deleteS3Images(userId, request.getImageUrls()); // userId도 같이 넘겨줘서 혹시 모를 권한 체크에 활용할 수도.
+
+        return CommonResponse.onSuccess(null, "임시 S3 이미지 삭제 성공");
     }
 
     /**
