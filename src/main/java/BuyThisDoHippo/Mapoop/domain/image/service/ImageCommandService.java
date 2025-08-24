@@ -37,23 +37,39 @@ public class ImageCommandService {
     }
 
     public void deleteImage(Long imageId) {
-        ToiletImage toiletImage = toiletImageRepository.findByImageId(imageId)
+        ToiletImage toiletImage = toiletImageRepository.findByImageIdWithImage(imageId)
                 .orElseThrow(() -> new ApplicationException(CustomErrorCode.IMAGE_NOT_FOUND));
 
-        toiletImageRepository.delete(toiletImage);
+        Image image = toiletImage.getImage();
+        String imageUrl = image.getImageUrl();
 
-        s3ImageService.deleteImage(toiletImage.getImage().getImageUrl());
-        imageRepository.delete(toiletImage.getImage());
+        toiletImageRepository.delete(toiletImage);
+        toiletImageRepository.flush();
+
+        boolean referencedElsewhere =
+                toiletImageRepository.existsByImage(image);
+
+        if (!referencedElsewhere) {
+            s3ImageService.deleteImage(imageUrl);  // S3 삭제
+            imageRepository.delete(image);         // DB 이미지 삭제
+        }
     }
 
     public void deleteAllImages(Long toiletId) {
-        List<Image> images = imageRepository.findByToilet_IdOrderByCreatedAtAsc(toiletId);
-        if (images.isEmpty()) return;
+        List<ToiletImage> links = toiletImageRepository.findAllByToiletIdWithImage(toiletId);
+        if (links.isEmpty()) return;
 
-        for (Image image : images) {
-            s3ImageService.deleteImage(image.getImageUrl());
-            imageRepository.delete(image);
+        List<Image> images = links.stream().map(ToiletImage::getImage).toList();
+        List<String> urls  = images.stream().map(Image::getImageUrl).toList();
+
+        toiletImageRepository.deleteAllInBatch(links);
+        toiletImageRepository.flush();
+
+        // S3 → DB 순서로 삭제
+        for (String url : urls) {
+            s3ImageService.deleteImage(url);
         }
+        imageRepository.deleteAllInBatch(images);
 
     }
 
