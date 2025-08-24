@@ -132,7 +132,12 @@ public class ReviewService {
 
         saveReviewTags(savedReview, request.getTagIds());
 
+
+        toilet.increaseTotalReviews();       // 카운트 +1
+        toiletRepository.save(toilet);
+
         updateToiletRating(toiletId);
+
 
         log.info("리뷰 작성 완료 - 리뷰 ID: {}", savedReview.getId());
 
@@ -180,6 +185,8 @@ public class ReviewService {
             // 태그 저장
             saveReviewTags(savedReview, request.getTagIds());
 
+            toilet.increaseTotalReviews();       // 카운트 +1
+            toiletRepository.save(toilet);
             // 화장실 평점 업데이트
             updateToiletRating(toiletId);
 
@@ -253,11 +260,14 @@ public class ReviewService {
             throw new ApplicationException(CustomErrorCode.UNAUTHORIZED);
         }
 
+        Toilet toilet = review.getToilet();
         Long toiletId = review.getToilet().getId();
         review.deleteReview();
 
         reviewTagRepository.deleteByReviewId(reviewId);
 
+        toilet.decreaseTotalReviews();   // 카운트 -1
+        toiletRepository.save(toilet);
         updateToiletRating(toiletId);
 
         log.info("리뷰 삭제 완료 - 리뷰 ID: {}", reviewId);
