@@ -54,9 +54,12 @@ public class ChatBotService {
             return ChatResponse.from(saved);
         }
 
-        // DB 검색 (키워드 X, 조건만)
+        // 질문에서 키워드 추출
+        String keyword = extractKeyword(req.getQuestion());
+        
+        // DB 검색 (키워드 포함)
         SearchFilter filter = SearchFilter.builder()
-                .keyword(null)
+                .keyword(keyword)  // ← 키워드 추가
                 .lat(req.getLat())
                 .lng(req.getLng())
                 .minRating(minRating)
@@ -228,5 +231,29 @@ public class ChatBotService {
             meters = 200.0; // 기본 3분 정도
         }
         return Math.max(1, (int) Math.round(meters / 70.0));
+    }
+
+    /** 질문에서 키워드 추출 */
+    private String extractKeyword(String question) {
+        if (question == null) return null;
+        
+        String q = question.toLowerCase();
+        
+        // 지역명/장소명 키워드 추출
+        String[] locationKeywords = {
+            "강남", "홍대", "명동", "이태원", "압구정", "청담", "잠실", "여의도",
+            "신촌", "대학로", "성수", "건대", "대화", "판교", "분당", "일산",
+            "지하철", "역", "터미널", "공항", "백화점", "마트", "병원", "학교",
+            "대학교", "회사", "사무실", "카페", "식당", "쇼핑몰", "공원"
+        };
+        
+        for (String keyword : locationKeywords) {
+            if (q.contains(keyword)) {
+                return keyword;
+            }
+        }
+        
+        // 특별한 요구사항이 있으면 null 반환 (범용 검색)
+        return null;
     }
 }
