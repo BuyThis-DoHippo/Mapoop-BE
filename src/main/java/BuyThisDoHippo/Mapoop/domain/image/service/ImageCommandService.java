@@ -82,4 +82,22 @@ public class ImageCommandService {
         Image image = Image.createToiletImageWithoutToilet(imageUrl, originalName, size, contentType, s3Key, null, null);
         return imageRepository.save(image).getId();
     }
+
+    @Transactional
+    public void attachOnlyNew(Toilet toilet, List<Long> imageIds) {
+        if (imageIds == null || imageIds.isEmpty()) return;
+
+        // 이미 연결된 이미지 id 집합
+        var existing = new java.util.HashSet<>(toiletImageRepository.findImageIdsByToiletId(toilet.getId()));
+
+        // 신규만 추림
+        List<Long> toAttach = imageIds.stream()
+                .filter(id -> !existing.contains(id))
+                .toList();
+
+        if (toAttach.isEmpty()) return;
+
+        // 기존 attach 로직 재활용
+        attachByIds(toilet, toAttach);
+    }
 }
