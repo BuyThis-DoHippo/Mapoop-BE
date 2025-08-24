@@ -9,6 +9,7 @@ import BuyThisDoHippo.Mapoop.domain.tag.repository.TagRepository;
 import BuyThisDoHippo.Mapoop.domain.tag.service.TagService;
 import BuyThisDoHippo.Mapoop.domain.toilet.dto.ToiletInfo;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
+import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletImageRepository;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
 import BuyThisDoHippo.Mapoop.global.common.TagConstants;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class SearchService {
     private final ToiletRepository toiletRepository;
     private final TagRepository tagRepository;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final ImageRepository imageRepository;
+    private final ToiletImageRepository toiletImageRepository;
 
     // Redis 캐시 키 접두사들
     private static final String AUTOCOMPLETE_PREFIX = "autocomplete:";
@@ -90,9 +91,9 @@ public class SearchService {
             if (available)
                 tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
-            String mainImageUrl = imageRepository
+            String mainImageUrl = toiletImageRepository
                     .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
-                    .map(Image::getImageUrl)
+                    .map(ti->ti.getImage().getImageUrl())
                     .orElse(null);
 
             return ToiletInfo.builder()
@@ -250,9 +251,9 @@ public class SearchService {
                     .collect(Collectors.toCollection(ArrayList::new));
             if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
-            String mainImageUrl = imageRepository
+            String mainImageUrl = toiletImageRepository
                     .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
-                    .map(Image::getImageUrl)
+                    .map(ti->ti.getImage().getImageUrl())
                     .orElse(null);
 
             return ToiletInfo.builder()
@@ -311,9 +312,9 @@ public class SearchService {
                     .collect(Collectors.toCollection(ArrayList::new));
             if (available) tagNames.add(TagConstants.VIRTUAL_AVAILABLE);
 
-            String mainImageUrl = imageRepository
+            String mainImageUrl = toiletImageRepository
                     .findFirstByToilet_IdOrderByCreatedAtAsc(t.getId())
-                    .map(Image::getImageUrl)
+                    .map(ti->ti.getImage().getImageUrl())
                     .orElse(null);
 
             return EmergencyResponse.builder()
