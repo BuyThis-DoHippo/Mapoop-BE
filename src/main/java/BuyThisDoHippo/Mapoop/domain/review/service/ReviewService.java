@@ -4,6 +4,7 @@ package BuyThisDoHippo.Mapoop.domain.review.service;
 import BuyThisDoHippo.Mapoop.domain.image.entity.Image;
 import BuyThisDoHippo.Mapoop.domain.image.repository.ImageRepository;
 import BuyThisDoHippo.Mapoop.domain.image.repository.ReviewImageRepository;
+import BuyThisDoHippo.Mapoop.domain.image.service.ReviewImageService;
 import BuyThisDoHippo.Mapoop.domain.image.service.S3ImageService;
 import BuyThisDoHippo.Mapoop.domain.review.dto.ReviewListResponse;
 import BuyThisDoHippo.Mapoop.domain.review.dto.ReviewRequest;
@@ -20,6 +21,7 @@ import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.toilet.repository.ToiletRepository;
 import BuyThisDoHippo.Mapoop.domain.user.entity.User;
 import BuyThisDoHippo.Mapoop.domain.user.repository.UserRepository;
+import BuyThisDoHippo.Mapoop.global.common.CommonResponse;
 import BuyThisDoHippo.Mapoop.global.error.ApplicationException;
 import BuyThisDoHippo.Mapoop.global.error.CustomErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +31,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +60,7 @@ public class ReviewService {
     private final ReviewTagRepository reviewTagRepository;
     private final ImageRepository imageRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final ReviewImageService reviewImageService;
 
     @Autowired(required = false)
     private S3ImageService s3ImageService;
@@ -222,6 +232,24 @@ public class ReviewService {
 
         imageRepository.saveAll(images);
         log.info("리뷰 이미지 정보 저장 완료 - 리뷰 ID: {}, 이미지 개수: {}", review.getId(), images.size());
+    }
+
+    @PostMapping(value = "/toilets/{toiletId}/reviews/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommonResponse<List<String>> uploadReviewImages(
+            @PathVariable Long toiletId, // 화장실 ID 받음!
+            @RequestPart("images") List<MultipartFile> images, // 이미지 파일들
+            Principal principal // 누가 올렸는지 알기 위해 필요함
+    ) {
+        Long userId = getUserIdFromPrincipal(principal);
+        log.info("리뷰 이미지 개별 업로드 API 호출 - 사용자 ID: {}, 화장실 ID: {}, 이미지 개수: {}",
+                userId, toiletId, images != null ? images.size() : 0);
+
+        // TODO: 여기서는 파일들을 저장하고 저장된 URL 리스트를 반환한다고 가정
+        // reviewImageService 에 toiletId까지 넘겨줘서 필요하다면 활용하게 할 수 있어.
+        List<String> imageUrls = reviewImageService.uploadReviewImages(userId, toiletId, images);
+
+        return CommonResponse.onSuccess(imageUrls, "리뷰 이미지 업로드 성공");
     }
 
     /**
@@ -494,5 +522,20 @@ public class ReviewService {
     private Review findReviewById(Long reviewId) {
         return reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ApplicationException(CustomErrorCode.REVIEW_NOT_FOUND));
+    }
+
+    private Long getUserIdFromPrincipal(Principal principal) {
+        if (principal == null) {
+            throw new ApplicationException(CustomErrorCode.UNAUTHORIZED); // 인증되지 않은 사용자
+        }
+        // 예시: Spring Security에서 사용자 ID를 Long 타입으로 가져오는 로직
+        // Principal이 OAuth2AuthenticationToken 이라면 getPrincipal().getName() 등으로 가져올 수 있음
+        // 아니면 CustomUserDetails 객체에서 Long userId를 가져올 수도 있음
+        String userIdString = principal.getName(); // 보통 principal.getName()이 String 형태의 사용자 식별자 (ID)를 반환함
+        try {
+            return Long.parseLong(userIdString); // Long으로 변환
+        } catch (NumberFormatException e) {
+            throw new ApplicationException(CustomErrorCode.USER_NOT_FOUND);
+        }
     }
 }

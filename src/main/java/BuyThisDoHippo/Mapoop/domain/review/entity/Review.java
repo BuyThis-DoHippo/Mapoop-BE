@@ -1,6 +1,7 @@
 package BuyThisDoHippo.Mapoop.domain.review.entity;
 
 import BuyThisDoHippo.Mapoop.domain.image.entity.Image;
+import BuyThisDoHippo.Mapoop.domain.image.entity.ReviewImage;
 import BuyThisDoHippo.Mapoop.domain.toilet.entity.Toilet;
 import BuyThisDoHippo.Mapoop.domain.user.entity.User;
 import BuyThisDoHippo.Mapoop.global.common.BaseEntity;
@@ -75,15 +76,32 @@ public class Review extends BaseEntity {
 
     /** 리뷰에 첨부된 이미지들 (1:N) */
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Image> images = new ArrayList<>();
+    private List<ReviewImage> reviewImages = new ArrayList<>();
 
     /**
      * 리뷰 이미지 URL 목록 조회
      */
     public List<String> getImageUrls() {
-        return images.stream()
-                .map(Image::getImageUrl)
+        return reviewImages.stream()
+                .map(ReviewImage::getImageUrl)
                 .collect(Collectors.toList());
     }
+
+    // ⭐⭐ 새로 추가: ReviewImage 편의 메소드 (서비스에서 이미지 추가할 때 사용) ⭐⭐
+    public void addReviewImage(ReviewImage reviewImage) {
+        this.reviewImages.add(reviewImage);
+        if (reviewImage.getReview() != this) { // 무한 루프 방지 (이미 연결되어 있다면 스킵)
+            reviewImage.setReview(this);
+        }
+    }
+
+    // ⭐⭐ 새로 추가: 이미지 리스트를 한 번에 설정하는 메소드 (서비스에서 DTO로 받은 URL 리스트를 연결할 때 사용) ⭐⭐
+    public void setReviewImages(List<ReviewImage> reviewImages) {
+        this.reviewImages.clear(); // 기존 이미지 클리어
+        if (reviewImages != null) {
+            reviewImages.forEach(this::addReviewImage); // 새 이미지들 추가
+        }
+    }
+
 
 }

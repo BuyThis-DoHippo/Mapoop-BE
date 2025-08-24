@@ -10,6 +10,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Setter
 @Table(name = "review_image",
         indexes = {
                 @Index(name = "idx_review_image_review", columnList = "review_id")
