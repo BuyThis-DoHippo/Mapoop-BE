@@ -70,6 +70,8 @@ logging:
     BuyThisDoHippo.Mapoop: DEBUG
     com.amazonaws: ${AWS_LOG_LEVEL:WARN}
     org.springframework.security: DEBUG
+    logging.level.reactor.netty.http.client: DEBUG
+    logging.level.org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
 
 google:
   maps:

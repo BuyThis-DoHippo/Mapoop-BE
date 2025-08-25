@@ -128,7 +128,7 @@ public class ToiletService {
                         .openTime(toilet.getOpenTime())
                         .closeTime(toilet.getCloseTime())
                         .isOpen24h(Boolean.TRUE.equals(toilet.getOpen24h()))
-                        .isOpenNow(toilet.isOpenNow(LocalTime.now()))
+                        .isOpenNow(toilet.isOpenNow(LocalTime.now(ZoneId.of("Asia/Seoul"))))
                         .build())
                 .isPartnership(Boolean.TRUE.equals(toilet.getIsPartnership()))
                 .description(toilet.getDescription())
