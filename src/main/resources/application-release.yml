@@ -1,0 +1,86 @@
+# application-release.yml
+
+spring:
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}          # 운영 필수
+      timeout: 2s
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000                # 10m
+      max-lifetime: 1800000               # 30m
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false                       # 운영 비활성화
+    properties:
+      hibernate:
+        format_sql: false
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# OpenAI
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL}
+    url: https://api.openai.com/v1/chat/completions
+
+# Kakao
+kakao:
+  api:
+    rest-key: ${KAKAO_REST_API_KEY}
+
+app:
+  kakao:
+    enabled: ${KAKAO_ENABLED:false}
+
+# AWS 설정
+aws:
+  enabled: ${AWS_ENABLED:true}
+
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET_NAME}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ${AWS_REGION}
+      auto: false
+    stack:
+      auto: false
+
+google:
+  maps:
+    api:
+      key: ${GOOGLE_MAPS_API_KEY}
+
+logging:
+  level:
+    root: INFO
+    BuyThisDoHippo.Mapoop: DEBUG
+    com.amazonaws: ${AWS_LOG_LEVEL:WARN}
+    org.springframework.security: INFO

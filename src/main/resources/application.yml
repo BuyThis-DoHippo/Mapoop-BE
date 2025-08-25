@@ -1,4 +1,10 @@
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -9,3 +15,63 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일
+
+# OpenAI API 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    url: https://api.openai.com/v1/chat/completions
+
+# Kakao API 설정
+kakao:
+  api:
+    rest-key: ${KAKAO_REST_API_KEY}
+
+app:
+  kakao:
+    enabled: ${KAKAO_ENABLED:false}
+
+# AWS 설정
+aws:
+  enabled: ${AWS_ENABLED:false}
+
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET_NAME}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ${AWS_REGION}
+      auto: false
+    stack:
+      auto: false
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    BuyThisDoHippo.Mapoop: DEBUG
+    com.amazonaws: ${AWS_LOG_LEVEL:WARN}
+    org.springframework.security: DEBUG
+
+google:
+  maps:
+    api:
+      key: ${GOOGLE_MAPS_API_KEY}
